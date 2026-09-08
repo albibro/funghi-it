@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Indice di crescita dei funghi — Italia</title>
-<meta name="description" content="Indice previsionale di crescita del porcino in Italia, ricalcolato ogni giorno da un modello deterministico su dati meteo, uso del suolo e morfologia.">
+<meta name="description" content="Indice previsionale di crescita del porcino in Italia a 2,8 km di risoluzione, ricalcolato ogni giorno da un modello deterministico.">
 
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
@@ -16,8 +16,7 @@
   --i3:#D9AE55; --i4:#B9722E; --i5:#7A3B18;
   --inchiostro:#241F19; --tenue:#6B6156; --carta:#FBFAF7;
   --bordo:#DAD5CB; --incavo:#EDEAE2;
-  --ombra:0 2px 14px rgba(36,31,25,.14);
-  --raggio:10px;
+  --ombra:0 2px 14px rgba(36,31,25,.14); --raggio:10px;
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overscroll-behavior:none}
@@ -38,7 +37,6 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
   color:var(--inchiostro);cursor:pointer;padding:0}
 .tondo:focus-visible{outline:2px solid var(--i4);outline-offset:2px}
 
-/* ---------- Cursore temporale ---------- */
 .tempo{position:absolute;z-index:5;left:14px;right:14px;
   bottom:calc(14px + env(safe-area-inset-bottom));background:var(--carta);
   border:1px solid var(--bordo);border-radius:var(--raggio);box-shadow:var(--ombra);
@@ -65,7 +63,6 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
 .pista input:focus-visible::-webkit-slider-thumb{outline:2px solid var(--i4);outline-offset:2px}
 .pista-etichette{display:flex;justify-content:space-between;font-size:10px;color:var(--tenue);margin-top:5px}
 
-/* ---------- Legenda ---------- */
 .legenda{position:absolute;z-index:4;right:14px;
   bottom:calc(122px + env(safe-area-inset-bottom));background:var(--carta);
   border:1px solid var(--bordo);border-radius:var(--raggio);box-shadow:var(--ombra);
@@ -76,7 +73,6 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
   background:linear-gradient(90deg,#DDDCD5 0%,#C2CBAE 14%,#9CB077 32%,#D9AE55 56%,#B9722E 78%,#7A3B18 100%)}
 .scala-note{display:flex;justify-content:space-between;font-size:10px;color:var(--tenue);margin-top:4px}
 
-/* ---------- Pannello ---------- */
 .pannello{position:absolute;z-index:6;left:0;right:0;bottom:0;background:var(--carta);
   border-top:1px solid var(--bordo);border-radius:14px 14px 0 0;
   box-shadow:0 -3px 20px rgba(36,31,25,.16);
@@ -120,7 +116,6 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
 .totale{border-top:1px solid var(--bordo);margin-top:9px;padding-top:9px;
   display:flex;justify-content:space-between;font-size:12.5px;font-weight:600}
 
-/* ---------- Fogli (info e classifica) ---------- */
 .velo{position:absolute;inset:0;z-index:9;background:rgba(36,31,25,.45);
   display:none;align-items:flex-end;justify-content:center}
 .velo.aperto{display:flex}
@@ -139,7 +134,6 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
 .bottone{display:block;width:100%;margin-top:16px;padding:11px;border:none;border-radius:8px;
   background:var(--inchiostro);color:var(--carta);font-family:inherit;font-size:14px;
   font-weight:600;cursor:pointer}
-
 .classifica{list-style:none;margin:10px 0 0;padding:0}
 .classifica li{margin-bottom:6px}
 .classifica button{width:100%;display:grid;grid-template-columns:44px 1fr auto;gap:11px;
@@ -148,8 +142,7 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
 .classifica button:hover{background:var(--incavo)}
 .classifica button:focus-visible{outline:2px solid var(--i4);outline-offset:2px}
 .pallino{width:40px;height:28px;border-radius:5px;display:flex;align-items:center;
-  justify-content:center;font-size:14px;font-weight:700;color:#fff;
-  font-variant-numeric:tabular-nums}
+  justify-content:center;font-size:14px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
 .dove strong{display:block;font-size:13px;font-weight:600;line-height:1.2}
 .dove span{display:block;font-size:11px;color:var(--tenue);margin-top:1px}
 .freccia{font-size:13px;color:var(--tenue)}
@@ -228,9 +221,9 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
 <div class="velo" id="velo" role="dialog" aria-modal="true" aria-labelledby="titolo-info">
   <div class="foglio">
     <h2 id="titolo-info">Come si legge questa mappa</h2>
-    <p>Ogni riquadro copre circa dieci chilometri per otto. Il numero stima quanto
-       le condizioni ambientali siano favorevoli alla fruttificazione del porcino
-       in quel riquadro, non se ci siano funghi.</p>
+    <p>Ogni riquadro copre circa <strong>2,8 per 2 chilometri</strong>. Il numero
+       stima quanto le condizioni ambientali siano favorevoli alla fruttificazione
+       del porcino in quel riquadro, non se ci siano funghi.</p>
 
     <div class="avviso">
       <p><strong>La raccolta è regolata da leggi regionali.</strong> Permessi,
@@ -252,10 +245,23 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
        questo i valori alti sono rari, e l'indice va letto come confronto fra zone
        nello stesso giorno, non come una probabilità.</p>
 
+    <h3 id="risoluzione">Attenzione: la pioggia non ha questa risoluzione</h3>
+    <p>Va detto con chiarezza, perché cambia come vanno letti i riquadri. I dati
+       meteo hanno una risoluzione nativa di circa <strong>nove chilometri</strong>.
+       Bosco e quota invece li conosciamo a un centinaio di metri.</p>
+    <p>Quindi ogni gruppo di sedici riquadri condivide la stessa pioggia e la stessa
+       umidità misurata, mentre temperatura del suolo, tipo di bosco ed esposizione
+       sono calcolati sul riquadro singolo. La temperatura viene corretta per la
+       quota reale del riquadro, circa mezzo grado ogni cento metri di dislivello:
+       è la ragione per cui un versante alto e il suo fondovalle ora hanno punteggi
+       diversi, come è giusto che sia.</p>
+    <p>Non abbiamo inventato una distribuzione fine della pioggia dentro i nove
+       chilometri: sarebbe stata precisione finta.</p>
+
     <h3>Da lontano macchie, da vicino riquadri</h3>
     <p>A scala ampia la mappa mostra una superficie sfumata, perché quel che conta
        è dove sta il segnale sul territorio. Zoomando compaiono i riquadri veri
-       del calcolo, uno per cella, con il loro dettaglio.</p>
+       del calcolo.</p>
 
     <h3>I giorni futuri non sono una previsione meteo</h3>
     <p>La pioggia che innesca una buttata cade fra otto e venticinque giorni prima:
@@ -282,53 +288,39 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
 </div>
 
 <script>
-const SORGENTE = 'data/indice_porcino.geojson';
-
-/* Scala continua invece che a sei gradini: fra 30 e 48 il colore deve cambiare
-   davvero, altrimenti tutta la fascia media collassa in un ocra solo. */
+const SORGENTE = 'data/indice_porcino.json';
 const FERMATE = [[0,'#DDDCD5'],[1,'#C9CFB8'],[12,'#9CB077'],
                  [30,'#D9AE55'],[55,'#B9722E'],[80,'#7A3B18']];
-
 const NOMI = {
   trigger:'Pioggia al momento giusto', termica:'Temperatura del suolo',
   umidita:'Umidità attuale', ospite:'Bosco compatibile',
   esposizione:'Esposizione del versante', gelo:'Nessuna gelata recente'
 };
 const ORDINE = ['trigger','termica','umidita','ospite','esposizione','gelo'];
-const ZOOM_SCAMBIO = 7.2;   // sotto: macchie. sopra: riquadri.
+const ZOOM_SCAMBIO = 7.8;
 
-let mappa, dati = new Map(), giorni = [], giorno = 0, cella = null;
-let serie = [], riproduzione = null;
+let mappa, D = null, giorni = [], giorno = 0, sel = -1;
+let serie = [], riproduzione = null, geo = null;
 const $ = id => document.getElementById(id);
 const menoMoto = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function colore(v){
-  for (let i = FERMATE.length - 1; i >= 0; i--) if (v >= FERMATE[i][0]) {
-    if (i === FERMATE.length - 1) return FERMATE[i][1];
-    const [a,ca] = FERMATE[i], [b,cb] = FERMATE[i+1];
-    const t = (v - a) / (b - a);
-    const m = (x,y) => Math.round(parseInt(ca.substr(x,2),16)*(1-t) +
-                                  parseInt(cb.substr(y,2),16)*t);
-    return `rgb(${m(1,1)},${m(3,3)},${m(5,5)})`;
+  for (let i = FERMATE.length-1; i >= 0; i--) if (v >= FERMATE[i][0]) {
+    if (i === FERMATE.length-1) return FERMATE[i][1];
+    const [a,ca] = FERMATE[i], [b,cb] = FERMATE[i+1], t = (v-a)/(b-a);
+    const m = x => Math.round(parseInt(ca.substr(x,2),16)*(1-t) + parseInt(cb.substr(x,2),16)*t);
+    return `rgb(${m(1)},${m(3)},${m(5)})`;
   }
   return FERMATE[0][1];
 }
-
 const espColore = k => {
   const e = ['interpolate',['linear'],['coalesce',['get','i'+k],0]];
-  FERMATE.forEach(([v,c]) => e.push(v,c));
-  return e;
+  FERMATE.forEach(([v,c]) => e.push(v,c)); return e;
 };
-
-/* L'opacita' segue il valore: gli zeri quasi spariscono, i punteggi alti sono
-   pieni. E' questo, piu' del colore, a far emergere il segnale dalla trapunta. */
-const espOpacita = k => {
-  const v = ['coalesce',['get','i'+k],0];
-  return ['interpolate',['linear'],['zoom'],
-    ZOOM_SCAMBIO - .5, 0,
-    ZOOM_SCAMBIO + .8, ['interpolate',['linear'],v, 0,.06, 1,.30, 25,.60, 60,.82]];
-};
-
+const espOpacita = k => ['interpolate',['linear'],['zoom'],
+  ZOOM_SCAMBIO-.6, 0,
+  ZOOM_SCAMBIO+.8, ['interpolate',['linear'],['coalesce',['get','i'+k],0],
+                    0,.06, 1,.32, 25,.62, 60,.85]];
 const espPeso = k => ['interpolate',['linear'],['coalesce',['get','i'+k],0],
                       0,0, 8,.12, 30,.5, 70,1];
 
@@ -337,44 +329,59 @@ const fmtGiorno = iso => new Date(iso+'T12:00:00')
 const fmtCorto = iso => new Date(iso+'T12:00:00')
   .toLocaleDateString('it-IT',{weekday:'short',day:'numeric'});
 
+/* Ricostruisce i poligoni dagli array compatti. Con 25.000 celle la sola
+   impalcatura ripetuta di GeoJSON peserebbe piu' dei dati: il file arriva come
+   liste di numeri e le geometrie nascono qui, in una manciata di millisecondi. */
+function costruisciGeo(){
+  const passo = D.meta.passo;
+  const feats = new Array(D.celle.length);
+  for (let n = 0; n < D.celle.length; n++){
+    const c = D.celle[n];
+    const y0 = c[0]/1000, x0 = c[1]/1000, y1 = y0+passo, x1 = x0+passo;
+    const pr = {n};
+    for (let k = 0; k < D.i[n].length; k++) pr['i'+k] = D.i[n][k];
+    feats[n] = {type:'Feature', properties:pr, geometry:{type:'Polygon',
+      coordinates:[[[x0,y0],[x1,y0],[x1,y1],[x0,y1],[x0,y0]]]}};
+  }
+  return {type:'FeatureCollection', features:feats};
+}
+
 function disegnaAndamento(){
   const svg = $('andamento'), n = serie.length;
   if (n < 2){ svg.innerHTML=''; return; }
   const max = Math.max(...serie,1), L=6,R=6,H=40;
   const x = i => L + i*(300-L-R)/(n-1);
-  svg.setAttribute('viewBox','0 0 300 44');
-  svg.setAttribute('preserveAspectRatio','none');
+  svg.setAttribute('viewBox','0 0 300 44'); svg.setAttribute('preserveAspectRatio','none');
   const w = Math.max(4,(300-L-R)/n*0.5);
   svg.innerHTML = serie.map((v,i)=>{
     const h = Math.max(2, v/max*H);
     return `<rect x="${x(i)-w/2}" y="${H-h+2}" width="${w}" height="${h}" rx="1.5"
-             fill="${i===giorno?'var(--i4)':'var(--incavo)'}"/>`;
+      fill="${i===giorno?'var(--i4)':'var(--incavo)'}"/>`;
   }).join('');
 }
 
 function aggiornaTempo(){
   $('tempo-data').textContent = fmtGiorno(giorni[giorno]);
-  $('tempo-conta').textContent = serie[giorno] + ' zone sopra 25';
+  $('tempo-conta').textContent = serie[giorno].toLocaleString('it-IT') + ' zone sopra 25';
   disegnaAndamento();
   mappa.setPaintProperty('celle','fill-color', espColore(giorno));
   mappa.setPaintProperty('celle','fill-opacity', espOpacita(giorno));
   mappa.setPaintProperty('macchie','heatmap-weight', espPeso(giorno));
-  if (cella) mostra(cella);
+  if (sel >= 0) mostra(sel);
   if ($('velo-classifica').classList.contains('aperto')) costruisciClassifica();
 }
 
-function disegnaCurva(p){
+function disegnaCurva(n){
   if (giorni.length < 2){ $('curva').hidden = true; return; }
   $('curva').hidden = false;
-  const v = giorni.map((_,k) => p['i'+k] ?? 0);
-  const max = Math.max(10,...v), L=8,R=8,T=6,B=50;
+  const v = D.i[n], max = Math.max(10,...v), L=8,R=8,T=6,B=50;
   const x = i => L + i*(300-L-R)/(v.length-1);
   const y = q => B - (q/max)*(B-T);
   const linea = v.map((q,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${y(q).toFixed(1)}`).join('');
   const punti = v.map((q,i)=>
     `<circle cx="${x(i).toFixed(1)}" cy="${y(q).toFixed(1)}" r="${i===giorno?4.5:3}"
-       fill="${colore(q)}" stroke="var(--inchiostro)" stroke-width="${i===giorno?1.8:1}"
-       data-g="${i}"><title>${fmtCorto(giorni[i])}: ${q}</title></circle>`).join('');
+      fill="${colore(q)}" stroke="var(--inchiostro)" stroke-width="${i===giorno?1.8:1}"
+      data-g="${i}"><title>${fmtCorto(giorni[i])}: ${q}</title></circle>`).join('');
   $('curva-svg').innerHTML =
     `<path d="${linea}L${x(v.length-1)},${B}L${x(0)},${B}Z" fill="var(--incavo)"/>
      <path d="${linea}" fill="none" stroke="var(--tenue)" stroke-width="1.4" stroke-linejoin="round"/>
@@ -392,14 +399,20 @@ function disegnaCurva(p){
         (v[best] > v[0] ? ` contro ${v[0]} di oggi.` : '.');
 }
 
-function frase(p,v){
-  const d = p.dettaglio, f = p.fattori;
-  if (!d.pioggia)
+function frase(n, v){
+  const c = D.celle[n], f = D.f[n];
+  const dett = D.dettaglio_padri[c[4]];
+  if (!dett.pioggia)
     return 'Nessuna pioggia sufficiente negli ultimi venticinque giorni: senza un ' +
            'evento che superi i 25 millimetri in tre giorni non parte una buttata.';
-  let t = `Sono caduti ${d.pioggia.mm72} mm in tre giorni, ${d.pioggia.giorni_fa} ` +
-          `giorni fa. Il suolo è a ${d.suolo_6cm} gradi a sei centimetri.`;
-  const deboli = ORDINE.filter(k => f[k] < .35 && k !== 'esposizione');
+  let t = `Sulla zona da nove chilometri che comprende questo riquadro sono caduti ` +
+          `${dett.pioggia.mm72} mm in tre giorni, ${dett.pioggia.giorni_fa} giorni fa.`;
+  const dq = c[5];
+  if (Math.abs(dq) >= 80)
+    t += ` Questo riquadro sta ${Math.abs(dq)} metri ${dq>0?'più in alto':'più in basso'} ` +
+         `della media circostante, quindi il suolo è ${
+           (Math.abs(dq)/100*0.55).toFixed(1)} gradi ${dq>0?'più freddo':'più caldo'}.`;
+  const deboli = ORDINE.filter((k,i) => f[i]/100 < .35 && k !== 'esposizione');
   if (deboli.length)
     t += ` Il punteggio resta basso perché manca soprattutto: ${
       deboli.map(k=>NOMI[k].toLowerCase()).join(', ')}.`;
@@ -407,82 +420,86 @@ function frase(p,v){
   return t;
 }
 
-function mostra(id){
-  cella = id;
-  const p = dati.get(id);
-  if (!p) return;
-  const v = p['i'+giorno] ?? p.oggi ?? 0;
+function mostra(n){
+  sel = n;
+  const c = D.celle[n], f = D.f[n];
+  const v = D.i[n][giorno] ?? 0;
   $('punteggio').innerHTML = v + '<small>/100</small>';
   $('punteggio').style.color = colore(Math.max(v,8));
-  $('titolo-cella').textContent =
-    `${p.macroregione[0].toUpperCase()+p.macroregione.slice(1)}, ${p.quota} m`;
-  $('sotto-cella').textContent = `${Math.round(p.bosco*100)}% di bosco · riquadro ${id}`;
-  disegnaCurva(p);
-  $('racconto').textContent = frase(p,v);
+  $('titolo-cella').textContent = `Quota ${c[2]} m`;
+  $('sotto-cella').textContent =
+    `${c[3]}% di bosco · ${(c[0]/1000+D.meta.passo/2).toFixed(3)}N ${(c[1]/1000+D.meta.passo/2).toFixed(3)}E`;
+  disegnaCurva(n);
+  $('racconto').textContent = frase(n, v);
 
-  const c = $('catena');
-  c.innerHTML = '<h2>Il conto di oggi, fattore per fattore</h2>';
+  const cat = $('catena');
+  cat.innerHTML = '<h2>Il conto di oggi, fattore per fattore</h2>';
   ORDINE.forEach((k,i)=>{
-    const val = p.fattori[k];
+    const val = f[i]/100;
     const r = document.createElement('div');
     r.className = 'fattore';
     r.innerHTML = `<div class="segno">${i?'×':''}</div>
       <div class="barra"><i style="width:${Math.min(val,1)*100}%;background:${
         val<.35?'var(--i0)':val<.7?'var(--i2)':'var(--i3)'}"></i><span>${NOMI[k]}</span></div>
       <div class="valore">${val.toFixed(2)}</div>`;
-    c.appendChild(r);
+    cat.appendChild(r);
   });
   const t = document.createElement('div');
-  t.className='totale';
-  t.innerHTML = `<span>Prodotto × 100</span><span>${p.oggi}</span>`;
-  c.appendChild(t);
+  t.className = 'totale';
+  t.innerHTML = `<span>Prodotto × 100</span><span>${D.i[n][0]}</span>`;
+  cat.appendChild(t);
   $('pannello').classList.add('aperto');
 }
 
 function chiudi(){
-  $('pannello').classList.remove('aperto');
-  cella = null;
-  if (mappa.getLayer('scelta')) mappa.setFilter('scelta',['==',['get','id'],'']);
+  $('pannello').classList.remove('aperto'); sel = -1;
+  if (mappa.getLayer('scelta')) mappa.setFilter('scelta', ['==', ['get','n'], -1]);
+}
+
+function vaiA(n){
+  const c = D.celle[n], p = D.meta.passo;
+  mappa.flyTo({center:[c[1]/1000 + p/2, c[0]/1000 + p/2], zoom:9.6,
+               duration: menoMoto ? 0 : 1200});
+  mappa.setFilter('scelta', ['==', ['get','n'], n]);
+  mostra(n);
 }
 
 function costruisciClassifica(){
-  const top = [...dati.values()]
-    .map(p => ({p, v: p['i'+giorno] ?? 0}))
-    .filter(o => o.v > 0)
-    .sort((a,b) => b.v - a.v)
-    .slice(0,10);
+  const top = D.i.map((v,n) => [v[giorno] ?? 0, n])
+    .filter(a => a[0] > 0).sort((a,b) => b[0]-a[0]).slice(0,10);
   $('cl-sotto').textContent = top.length
-    ? `Le dieci con l'indice più alto ${giorno === 0 ? 'oggi' : fmtGiorno(giorni[giorno])}.`
+    ? `Le dieci con l'indice più alto ${giorno===0?'oggi':fmtGiorno(giorni[giorno])}.`
     : 'Nessuna zona con condizioni favorevoli in questo giorno.';
-  const ul = $('classifica');
-  ul.innerHTML = '';
-  top.forEach(({p,v}) => {
-    const li = document.createElement('li');
-    const b = document.createElement('button');
-    b.innerHTML =
-      `<span class="pallino" style="background:${colore(Math.max(v,20))}">${v}</span>
-       <span class="dove"><strong>${p.macroregione[0].toUpperCase()+p.macroregione.slice(1)}, ${p.quota} m</strong>
-       <span>${Math.round(p.bosco*100)}% di bosco · riquadro ${p.id}</span></span>
-       <span class="freccia">›</span>`;
-    b.onclick = () => {
-      $('velo-classifica').classList.remove('aperto');
-      const f = fonte.features.find(x => x.properties.id === p.id);
-      const c = f.geometry.coordinates[0];
-      mappa.flyTo({center:[(c[0][0]+c[2][0])/2, (c[0][1]+c[2][1])/2],
-                   zoom:8.6, duration: menoMoto ? 0 : 1200});
-      mappa.setFilter('scelta',['==',['get','id'],p.id]);
-      mostra(p.id);
-    };
-    li.appendChild(b);
-    ul.appendChild(li);
+  const ul = $('classifica'); ul.innerHTML = '';
+  top.forEach(([v,n]) => {
+    const c = D.celle[n];
+    const li = document.createElement('li'), b = document.createElement('button');
+    b.innerHTML = `<span class="pallino" style="background:${colore(Math.max(v,20))}">${v}</span>
+      <span class="dove"><strong>Quota ${c[2]} m · ${c[3]}% di bosco</strong>
+      <span>${(c[0]/1000+D.meta.passo/2).toFixed(3)}N ${(c[1]/1000+D.meta.passo/2).toFixed(3)}E</span></span>
+      <span class="freccia">›</span>`;
+    b.onclick = () => { $('velo-classifica').classList.remove('aperto'); vaiA(n); };
+    li.appendChild(b); ul.appendChild(li);
   });
 }
 
-let fonte = null;
+function alterna(){
+  if (riproduzione){
+    clearInterval(riproduzione); riproduzione = null;
+    $('riproduci').textContent = '▶';
+    $('riproduci').setAttribute('aria-label','Scorri i giorni'); return;
+  }
+  $('riproduci').textContent = '❙❙';
+  $('riproduci').setAttribute('aria-label','Ferma lo scorrimento');
+  riproduzione = setInterval(()=>{
+    giorno = (giorno+1) % giorni.length;
+    $('cursore').value = giorno; aggiornaTempo();
+  }, menoMoto ? 1600 : 900);
+}
 
 mappa = new maplibregl.Map({
   container:'mappa', style:'https://tiles.openfreemap.org/styles/positron',
-  center:[12.5,42.6], zoom:5.1, minZoom:4.4, maxZoom:11,
+  center:[12.5,42.6], zoom:5.1, minZoom:4.4, maxZoom:12,
   attributionControl:{compact:true}
 });
 mappa.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-left');
@@ -492,68 +509,53 @@ mappa.on('load', async () => {
   try {
     const r = await fetch(SORGENTE,{cache:'no-cache'});
     if (!r.ok) throw new Error(r.status);
-    fonte = await r.json();
+    D = await r.json();
   } catch(e){
     $('stato').innerHTML = 'Non riesco a caricare i dati dell\'indice.<br>Riprova fra qualche minuto.';
     return;
   }
+  $('stato').textContent = 'Preparo la mappa…';
+
+  giorni = D.meta.giorni || [];
+  serie = giorni.map((_,k) => D.i.reduce((n,v) => n + ((v[k] ?? 0) >= 25 ? 1 : 0), 0));
+  geo = costruisciGeo();
   $('stato').hidden = true;
 
-  giorni = fonte.metadata.giorni || [];
-  fonte.features.forEach(f => dati.set(f.properties.id, f.properties));
-  serie = giorni.map((_,k) =>
-    fonte.features.reduce((n,f) => n + ((f.properties['i'+k] ?? 0) >= 25 ? 1 : 0), 0));
+  const punti = {type:'FeatureCollection', features: geo.features.map(f => ({
+    type:'Feature', properties:f.properties,
+    geometry:{type:'Point', coordinates:[
+      f.geometry.coordinates[0][0][0] + D.meta.passo/2,
+      f.geometry.coordinates[0][0][1] + D.meta.passo/2]}}))};
 
-  // Punti al centro di ogni cella: servono alla mappa di calore, che lavora
-  // solo su geometrie puntuali. Li ricaviamo qui, senza toccare la pipeline.
-  const punti = {type:'FeatureCollection', features: fonte.features.map(f => {
-    const c = f.geometry.coordinates[0];
-    const p = {};
-    Object.keys(f.properties).forEach(k => { if (/^i\d+$/.test(k)) p[k] = f.properties[k]; });
-    return {type:'Feature', properties:p,
-      geometry:{type:'Point', coordinates:[(c[0][0]+c[2][0])/2,(c[0][1]+c[2][1])/2]}};
-  })};
-
-  const agg = new Date(fonte.metadata.generato);
+  const agg = new Date(D.meta.generato);
   $('sottotitolo').textContent =
-    `${fonte.metadata.n_celle.toLocaleString('it-IT')} zone boscate · aggiornato il ` +
+    `${D.meta.n.toLocaleString('it-IT')} zone da 2,8 km · aggiornato il ` +
     agg.toLocaleDateString('it-IT',{day:'numeric',month:'long'});
 
   mappa.addSource('punti',{type:'geojson',data:punti});
-  mappa.addLayer({
-    id:'macchie', type:'heatmap', source:'punti', maxzoom: ZOOM_SCAMBIO + 1,
+  mappa.addLayer({id:'macchie', type:'heatmap', source:'punti', maxzoom: ZOOM_SCAMBIO+1,
     paint:{
       'heatmap-weight': espPeso(0),
-      'heatmap-intensity':['interpolate',['linear'],['zoom'],4.5,.9,7,1.5],
-      'heatmap-radius':['interpolate',['linear'],['zoom'],4.5,13,7,42],
-      'heatmap-opacity':['interpolate',['linear'],['zoom'],
-        ZOOM_SCAMBIO-1,.9, ZOOM_SCAMBIO+.8,0],
+      'heatmap-intensity':['interpolate',['linear'],['zoom'],4.5,.5,7.5,1.1],
+      'heatmap-radius':['interpolate',['linear'],['zoom'],4.5,7,7.5,24],
+      'heatmap-opacity':['interpolate',['linear'],['zoom'],ZOOM_SCAMBIO-1,.9,ZOOM_SCAMBIO+.8,0],
       'heatmap-color':['interpolate',['linear'],['heatmap-density'],
         0,'rgba(221,220,213,0)', .12,'rgba(194,203,174,.55)',
         .32,'rgba(156,176,119,.75)', .55,'rgba(217,174,85,.85)',
-        .78,'rgba(185,114,46,.9)', 1,'rgba(122,59,24,.95)']
-    }
-  });
+        .78,'rgba(185,114,46,.9)', 1,'rgba(122,59,24,.95)']}});
 
-  mappa.addSource('indice',{type:'geojson',data:fonte});
-  mappa.addLayer({
-    id:'celle', type:'fill', source:'indice',
-    paint:{
-      'fill-color': espColore(0),
-      'fill-color-transition':{duration: menoMoto ? 0 : 260},
-      'fill-opacity': espOpacita(0),
-      'fill-opacity-transition':{duration: menoMoto ? 0 : 260}
-    }
-  });
-  mappa.addLayer({
-    id:'scelta', type:'line', source:'indice', filter:['==',['get','id'],''],
-    paint:{'line-color':'#241F19','line-width':2}
-  });
+  mappa.addSource('indice',{type:'geojson',data:geo});
+  mappa.addLayer({id:'celle', type:'fill', source:'indice',
+    paint:{'fill-color': espColore(0),
+           'fill-color-transition':{duration: menoMoto?0:260},
+           'fill-opacity': espOpacita(0),
+           'fill-opacity-transition':{duration: menoMoto?0:260}}});
+  mappa.addLayer({id:'scelta', type:'line', source:'indice',
+    filter:['==',['get','n'],-1], paint:{'line-color':'#241F19','line-width':2}});
 
   if (giorni.length > 1){
     $('tempo').hidden = false;
-    const c = $('cursore');
-    c.max = giorni.length - 1;
+    const c = $('cursore'); c.max = giorni.length-1;
     c.oninput = () => { if (riproduzione) alterna(); giorno = +c.value; aggiornaTempo(); };
     $('et-inizio').textContent = fmtCorto(giorni[0]);
     $('et-fine').textContent = fmtCorto(giorni[giorni.length-1]);
@@ -562,61 +564,39 @@ mappa.on('load', async () => {
   aggiornaTempo();
 
   mappa.on('click','celle', e => {
-    const id = e.features[0].properties.id;
-    mappa.setFilter('scelta',['==',['get','id'],id]);
-    mostra(id);
+    const n = e.features[0].properties.n;
+    mappa.setFilter('scelta',['==',['get','n'],n]);
+    mostra(n);
   });
   mappa.on('mouseenter','celle',()=>mappa.getCanvas().style.cursor='pointer');
   mappa.on('mouseleave','celle',()=>mappa.getCanvas().style.cursor='');
 
   try {
     if (!localStorage.getItem('avviso-visto')){
-      $('velo').classList.add('aperto');
-      localStorage.setItem('avviso-visto','1');
+      $('velo').classList.add('aperto'); localStorage.setItem('avviso-visto','1');
     }
   } catch(_){ $('velo').classList.add('aperto'); }
 });
 
-function alterna(){
-  if (riproduzione){
-    clearInterval(riproduzione); riproduzione = null;
-    $('riproduci').textContent = '▶';
-    $('riproduci').setAttribute('aria-label','Scorri i giorni');
-    return;
-  }
-  $('riproduci').textContent = '❙❙';
-  $('riproduci').setAttribute('aria-label','Ferma lo scorrimento');
-  riproduzione = setInterval(()=>{
-    giorno = (giorno + 1) % giorni.length;
-    $('cursore').value = giorno;
-    aggiornaTempo();
-  }, menoMoto ? 1600 : 900);
-}
-
 $('chiudi').onclick = chiudi;
 $('apri-info').onclick = () => $('velo').classList.add('aperto');
 $('chiudi-info').onclick = () => $('velo').classList.remove('aperto');
-$('apri-classifica').onclick = () => {
-  costruisciClassifica();
-  $('velo-classifica').classList.add('aperto');
-};
+$('apri-classifica').onclick = () => { costruisciClassifica(); $('velo-classifica').classList.add('aperto'); };
 $('chiudi-classifica').onclick = () => $('velo-classifica').classList.remove('aperto');
-[['velo'],['velo-classifica']].forEach(([v]) => {
+['velo','velo-classifica'].forEach(v => {
   $(v).onclick = e => { if (e.target === $(v)) $(v).classList.remove('aperto'); };
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape'){
-    const aperti = ['velo','velo-classifica'].filter(v => $(v).classList.contains('aperto'));
-    if (aperti.length) aperti.forEach(v => $(v).classList.remove('aperto'));
-    else chiudi();
+    const ap = ['velo','velo-classifica'].filter(v => $(v).classList.contains('aperto'));
+    if (ap.length) ap.forEach(v => $(v).classList.remove('aperto')); else chiudi();
     return;
   }
   if (giorni.length < 2 || document.activeElement === $('cursore')) return;
   if (e.key === 'ArrowRight' && giorno < giorni.length-1) giorno++;
   else if (e.key === 'ArrowLeft' && giorno > 0) giorno--;
   else return;
-  $('cursore').value = giorno;
-  aggiornaTempo();
+  $('cursore').value = giorno; aggiornaTempo();
 });
 </script>
 </body>

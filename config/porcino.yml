@@ -127,6 +127,23 @@ modello:
     ampiezza: 0.12
     t_neutra: 15.5     # temperatura attorno a cui l'effetto cambia segno
 
+  # --- Correzione per quota nelle sotto-celle ---------------------------------
+  # Il meteo arriva dalla cella genitore da 9 km. Dentro quei 9 km la quota puo'
+  # variare di oltre mille metri, e la temperatura del suolo con essa. Correggiamo
+  # applicando un gradiente verticale alla differenza fra la quota della
+  # sotto-cella e quella media del genitore.
+  #
+  # In aria libera il gradiente e' circa 0.65 gradi ogni 100 m. Nel suolo e'
+  # attenuato, e tanto piu' in profondita': l'inerzia termica smorza le
+  # variazioni. I valori qui sotto sono una prima stima da tarare col backtest.
+  #
+  # Pioggia e umidita' NON vengono corrette: non abbiamo un modo difendibile per
+  # ridistribuirle dentro la cella, e inventarlo darebbe precisione finta.
+  downscaling:
+    gradiente_6cm: 0.55      # gradi ogni 100 metri
+    gradiente_18cm: 0.45
+    delta_max: 900           # oltre questo dislivello dal genitore non correggiamo
+
   # --- Orizzonte di previsione ------------------------------------------------
   # Quanti giorni futuri calcolare. Nota: per un giorno futuro entro +8 la
   # pioggia trigger e' gia' avvenuta, quindi non e' una previsione meteo ma un

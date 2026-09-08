@@ -46,7 +46,7 @@ import pandas as pd
 import rasterio
 from rasterio.warp import transform as warp_transform
 
-STEP = 0.1
+STEP = 0.1   # valore predefinito, sovrascritto da --passo
 
 # CLC distribuisce il raster 100 m con valori "GRID_CODE" 1..44 (48 = NODATA),
 # non con i codici a 3 cifre. Questa e' la corrispondenza ufficiale.
@@ -86,9 +86,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--clc", required=True, help="GeoTIFF CLC2018 100 m")
     ap.add_argument("--grid", default="data/grid/cells.csv")
+    ap.add_argument("--passo", type=float, default=0.1,
+                    help="lato cella in gradi; 0.025 per la sottogriglia")
     ap.add_argument("--out", default="data/static/cells_corine.csv")
     ap.add_argument("--block", type=int, default=512, help="righe per blocco")
     args = ap.parse_args()
+
+    global STEP
+    STEP = args.passo
+    print(f"[griglia] passo {STEP} gradi")
 
     grid = pd.read_csv(args.grid)
     # Indice rapido cella -> posizione nella tabella.

@@ -89,7 +89,7 @@ jobs:
         run: gh release upload dati data/meteo/storico.csv.gz --clobber
 
       - name: Calcola l'indice
-        run: python scripts/05_modello.py --specie config/porcino.yml
+        run: python scripts/05b_modello_sub.py --specie config/porcino.yml
 
       - name: Prepara il sito
         run: python scripts/06_build_sito.py
@@ -101,10 +101,10 @@ jobs:
             echo '```'
             python - <<'PY'
           import json
-          g = json.load(open("data/output/indice_porcino.geojson"))
-          v = [f["properties"]["oggi"] for f in g["features"]]
-          m = g["metadata"]
-          print(f"celle          {m['n_celle']}")
+          g = json.load(open("data/output/indice_porcino.json"))
+          v = [x[0] for x in g["i"]]
+          m = g["meta"]
+          print(f"sotto-celle    {m['n']}")
           print(f"giorni         {m['giorni'][0]} .. {m['giorni'][-1]}")
           print(f"indice massimo {max(v)}")
           print(f"celle sopra 25 {sum(1 for x in v if x >= 25)}")

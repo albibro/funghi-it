@@ -39,13 +39,13 @@ def main():
 
     n = 0
     for f in sorted(os.listdir(args.dati)):
-        if f.endswith(".geojson"):
+        if f.endswith(".geojson") or f.endswith(".json"):
             src = os.path.join(args.dati, f)
             shutil.copy2(src, os.path.join(args.out, "data", f))
             print(f"[sito] {f}  ({os.path.getsize(src) / 1e6:.2f} MB)")
             n += 1
     if n == 0:
-        raise SystemExit(f"nessun geojson in {args.dati}: lancia prima 05_modello.py")
+        raise SystemExit(f"nessun dato in {args.dati}: lancia prima il modello")
 
     open(os.path.join(args.out, ".nojekyll"), "w").close()
     with open(os.path.join(args.out, "robots.txt"), "w") as f:

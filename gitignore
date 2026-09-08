@@ -1,0 +1,22 @@
+# Ambiente Python locale
+.venv/
+__pycache__/
+*.pyc
+
+# Dati grezzi scaricati: enormi e ricostruibili
+data/raw/
+*.tif
+*.zip
+
+# Storico meteo: vive come allegato della Release "dati", non in git
+data/meteo/
+
+# Tabelle statiche complete: pesanti, servono solo in locale.
+# I file "attive" invece SI', perche' il job giornaliero li usa.
+data/static/subcells_static.csv
+data/static/subcells_corine.csv
+data/static/subcells_dem.csv
+
+# Output rigenerati a ogni esecuzione
+data/output/
+sito/

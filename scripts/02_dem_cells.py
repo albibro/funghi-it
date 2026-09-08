@@ -41,7 +41,7 @@ import pandas as pd
 import rasterio
 import requests
 
-STEP = 0.1
+STEP = 0.1   # valore predefinito, sovrascritto da --passo
 BASE = "https://copernicus-dem-90m.s3.eu-central-1.amazonaws.com"
 TILE_DIR = "data/raw/dem"
 
@@ -129,9 +129,15 @@ def slope_aspect(z, lat_centre):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--grid", default="data/grid/cells.csv")
+    ap.add_argument("--passo", type=float, default=0.1,
+                    help="lato cella in gradi; 0.025 per la sottogriglia")
     ap.add_argument("--out", default="data/static/cells_dem.csv")
     ap.add_argument("--keep-tiles", action="store_true")
     args = ap.parse_args()
+
+    global STEP
+    STEP = args.passo
+    print(f"[griglia] passo {STEP} gradi")
 
     os.makedirs(TILE_DIR, exist_ok=True)
     grid = pd.read_csv(args.grid)
