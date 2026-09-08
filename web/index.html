@@ -134,6 +134,16 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
 .bottone{display:block;width:100%;margin-top:16px;padding:11px;border:none;border-radius:8px;
   background:var(--inchiostro);color:var(--carta);font-family:inherit;font-size:14px;
   font-weight:600;cursor:pointer}
+.cerca-campo{width:100%;font-family:inherit;font-size:16px;padding:11px 13px;
+  border:1px solid var(--bordo);border-radius:8px;background:var(--carta);
+  color:var(--inchiostro);margin-top:6px}
+.cerca-campo:focus{outline:2px solid var(--i4);outline-offset:1px}
+.qui{width:100%;display:flex;align-items:center;gap:9px;background:var(--incavo);
+  border:1px solid var(--bordo);border-radius:8px;padding:11px 13px;margin-top:9px;
+  font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;color:inherit}
+.qui:focus-visible{outline:2px solid var(--i4);outline-offset:2px}
+.esito{font-size:12px;color:var(--tenue);margin-top:10px;min-height:16px}
+
 .classifica{list-style:none;margin:10px 0 0;padding:0}
 .classifica li{margin-bottom:6px}
 .classifica button{width:100%;display:grid;grid-template-columns:44px 1fr auto;gap:11px;
@@ -166,6 +176,7 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
     <p id="sottotitolo">Indice ricalcolato ogni giorno</p>
   </div>
   <div class="comandi">
+    <button class="tondo" id="apri-cerca" aria-label="Cerca una localita o usa la tua posizione">⌕</button>
     <button class="tondo" id="apri-classifica" aria-label="Le zone migliori di oggi">★</button>
     <button class="tondo" id="apri-info" aria-label="Informazioni, metodo e avvertenze">i</button>
   </div>
@@ -208,6 +219,20 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
   <p class="racconto" id="racconto"></p>
   <div class="catena" id="catena"></div>
 </section>
+
+<div class="velo" id="velo-cerca" role="dialog" aria-modal="true" aria-labelledby="tit-ce">
+  <div class="foglio">
+    <h2 id="tit-ce">Vai in un posto</h2>
+    <p>Scrivi il nome di un comune, di una valle o di una localita'.</p>
+    <input class="cerca-campo" id="cerca-campo" type="search" autocomplete="off"
+           placeholder="Per esempio: Tarvisio, Casentino, Monte Amiata"
+           aria-label="Nome della localita">
+    <button class="qui" id="qui">📍 Usa la mia posizione</button>
+    <p class="esito" id="cerca-esito"></p>
+    <ul class="classifica" id="cerca-risultati"></ul>
+    <button class="bottone" id="chiudi-cerca">Chiudi</button>
+  </div>
+</div>
 
 <div class="velo" id="velo-classifica" role="dialog" aria-modal="true" aria-labelledby="tit-cl">
   <div class="foglio">
@@ -344,6 +369,40 @@ function costruisciGeo(){
       coordinates:[[[x0,y0],[x1,y0],[x1,y1],[x0,y1],[x0,y0]]]}};
   }
   return {type:'FeatureCollection', features:feats};
+}
+
+/* Indice da coordinate a sotto-cella. La griglia e' allineata ai multipli
+   esatti del passo, quindi l'angolo sud-ovest si ricava con un troncamento e
+   la ricerca e' una lettura diretta, non una scansione di 25.000 elementi. */
+let perPosizione = null;
+function costruisciIndice(){
+  perPosizione = new Map();
+  for (let n = 0; n < D.celle.length; n++)
+    perPosizione.set(D.celle[n][0] + '_' + D.celle[n][1], n);
+}
+function cellaA(lat, lon){
+  const p = D.meta.passo;
+  const y = Math.round(Math.floor(lat / p + 1e-9) * p * 1000);
+  const x = Math.round(Math.floor(lon / p + 1e-9) * p * 1000);
+  const n = perPosizione.get(y + '_' + x);
+  return n === undefined ? -1 : n;
+}
+
+/* Porta la mappa su un punto e, se li' c'e' una zona monitorata, ne apre il
+   dettaglio. Volare su una coordinata senza dire cosa c'e' sarebbe meta' del
+   lavoro: la domanda vera non e' "dov'e' Tarvisio" ma "quanto fa Tarvisio". */
+function vaiACoordinate(lat, lon, etichetta){
+  const n = cellaA(lat, lon);
+  mappa.flyTo({center:[lon, lat], zoom: n >= 0 ? 9.6 : 8.5,
+               duration: menoMoto ? 0 : 1200});
+  if (n >= 0){
+    mappa.setFilter('scelta', ['==', ['get','n'], n]);
+    mostra(n);
+    return `${etichetta}: indice ${D.i[n][giorno]} oggi.`;
+  }
+  chiudi();
+  return `${etichetta}: qui non c'e' bosco monitorato. ` +
+         `Guarda i riquadri colorati piu' vicini.`;
 }
 
 function disegnaAndamento(){
@@ -519,6 +578,7 @@ mappa.on('load', async () => {
   giorni = D.meta.giorni || [];
   serie = giorni.map((_,k) => D.i.reduce((n,v) => n + ((v[k] ?? 0) >= 25 ? 1 : 0), 0));
   geo = costruisciGeo();
+  costruisciIndice();
   $('stato').hidden = true;
 
   const punti = {type:'FeatureCollection', features: geo.features.map(f => ({
@@ -578,17 +638,90 @@ mappa.on('load', async () => {
   } catch(_){ $('velo').classList.add('aperto'); }
 });
 
+/* Geocodifica con l'API di Open-Meteo: gratuita, senza chiave, e chiamata dal
+   browser dell'utente, quindi non intacca la quota giornaliera del nostro job. */
+let attesaRicerca = null;
+
+async function cerca(testo){
+  const ul = $('cerca-risultati');
+  if (testo.trim().length < 2){ ul.innerHTML = ''; $('cerca-esito').textContent = ''; return; }
+  $('cerca-esito').textContent = 'Cerco…';
+  try {
+    const u = 'https://geocoding-api.open-meteo.com/v1/search?count=6&language=it' +
+              '&country=IT&name=' + encodeURIComponent(testo.trim());
+    const r = await fetch(u);
+    const d = await r.json();
+    const ris = d.results || [];
+    if (!ris.length){ ul.innerHTML=''; $('cerca-esito').textContent='Nessun risultato.'; return; }
+    $('cerca-esito').textContent = '';
+    ul.innerHTML = '';
+    ris.forEach(x => {
+      const n = cellaA(x.latitude, x.longitude);
+      const v = n >= 0 ? D.i[n][giorno] : null;
+      const li = document.createElement('li'), b = document.createElement('button');
+      const zona = [x.admin2, x.admin1].filter(Boolean).join(', ');
+      b.innerHTML =
+        `<span class="pallino" style="background:${v===null?'var(--tenue)':colore(Math.max(v,20))}">${
+          v===null ? '–' : v}</span>
+         <span class="dove"><strong>${x.name}</strong>
+         <span>${zona}${x.elevation ? ' · ' + Math.round(x.elevation) + ' m' : ''}</span></span>
+         <span class="freccia">›</span>`;
+      b.onclick = () => {
+        $('velo-cerca').classList.remove('aperto');
+        vaiACoordinate(x.latitude, x.longitude, x.name);
+      };
+      li.appendChild(b); ul.appendChild(li);
+    });
+  } catch(e){
+    $('cerca-esito').textContent = 'Ricerca non disponibile, riprova.';
+  }
+}
+
+function miaPosizione(){
+  if (!navigator.geolocation){
+    $('cerca-esito').textContent = 'Il tuo dispositivo non fornisce la posizione.';
+    return;
+  }
+  $('cerca-esito').textContent = 'Cerco la tua posizione…';
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      $('velo-cerca').classList.remove('aperto');
+      const msg = vaiACoordinate(pos.coords.latitude, pos.coords.longitude, 'Dove sei');
+      $('cerca-esito').textContent = msg;
+    },
+    err => {
+      $('cerca-esito').textContent = err.code === 1
+        ? 'Permesso negato. Autorizza la posizione nelle impostazioni del browser.'
+        : 'Non riesco a ottenere la posizione.';
+    },
+    {enableHighAccuracy:false, timeout:12000, maximumAge:120000}
+  );
+}
+
+$('apri-cerca').onclick = () => {
+  $('velo-cerca').classList.add('aperto');
+  setTimeout(() => $('cerca-campo').focus(), 60);
+};
+$('chiudi-cerca').onclick = () => $('velo-cerca').classList.remove('aperto');
+$('qui').onclick = miaPosizione;
+$('cerca-campo').oninput = e => {
+  clearTimeout(attesaRicerca);
+  const t = e.target.value;
+  attesaRicerca = setTimeout(() => cerca(t), 350);
+};
+
 $('chiudi').onclick = chiudi;
 $('apri-info').onclick = () => $('velo').classList.add('aperto');
 $('chiudi-info').onclick = () => $('velo').classList.remove('aperto');
 $('apri-classifica').onclick = () => { costruisciClassifica(); $('velo-classifica').classList.add('aperto'); };
 $('chiudi-classifica').onclick = () => $('velo-classifica').classList.remove('aperto');
-['velo','velo-classifica'].forEach(v => {
+['velo','velo-classifica','velo-cerca'].forEach(v => {
   $(v).onclick = e => { if (e.target === $(v)) $(v).classList.remove('aperto'); };
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape'){
-    const ap = ['velo','velo-classifica'].filter(v => $(v).classList.contains('aperto'));
+    const ap = ['velo','velo-classifica','velo-cerca']
+      .filter(v => $(v).classList.contains('aperto'));
     if (ap.length) ap.forEach(v => $(v).classList.remove('aperto')); else chiudi();
     return;
   }
