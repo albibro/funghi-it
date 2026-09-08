@@ -211,11 +211,24 @@ def main():
     st = st[st["attiva"]] if "attiva" in st.columns else st
 
     ultimo = df["giorno"].max()
-    oggi = ultimo  # l'ultimo giorno disponibile fa da "oggi"
+    primo = df["giorno"].min()
+
+    # "Oggi" e' la data reale, non l'ultimo giorno dello storico. Confonderle era
+    # un errore: con lo storico esteso alla previsione, l'ultimo giorno e' fra una
+    # settimana, e prendendolo come oggi ogni giorno bersaglio successivo cadeva
+    # oltre la fine dei dati e veniva scartato. Restava sempre un giorno solo.
+    oggi = pd.Timestamp.today().normalize()
+    if not (primo <= oggi <= ultimo):
+        # Storico senza previsione (subito dopo il bootstrap) o dati vecchi:
+        # ripieghiamo sull'ultimo giorno disponibile.
+        print(f"[nota] oggi ({oggi.date()}) e' fuori dallo storico "
+              f"({primo.date()}..{ultimo.date()}): uso l'ultimo giorno disponibile")
+        oggi = ultimo
+
     bersagli = [oggi + timedelta(days=k) for k in range(0, p["giorni_previsti"] + 1)]
     bersagli = [b for b in bersagli if b <= ultimo]
     print(f"[dati] {df.cell_id.nunique()} celle, "
-          f"{df.giorno.min().date()} .. {ultimo.date()}")
+          f"{primo.date()} .. {ultimo.date()}")
     print(f"[calcolo] {len(bersagli)} giorni bersaglio: "
           f"{bersagli[0].date()} .. {bersagli[-1].date()}")
     if len(bersagli) == 1:
