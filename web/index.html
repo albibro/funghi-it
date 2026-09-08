@@ -12,189 +12,188 @@
 
 <style>
 :root{
-  /* Scala dell'indice: dal lichene al cappello del porcino.
-     Non e' un gradiente decorativo: i colori vengono dal soggetto. */
-  --i0:#DDDCD5;  --i1:#C2CBAE;  --i2:#9CB077;
-  --i3:#D9AE55;  --i4:#B9722E;  --i5:#7A3B18;
+  /* Scala dell'indice: dal lichene al cappello del porcino. */
+  --i0:#DDDCD5; --i1:#C2CBAE; --i2:#9CB077;
+  --i3:#D9AE55; --i4:#B9722E; --i5:#7A3B18;
 
   --inchiostro:#241F19;
-  --inchiostro-tenue:#6B6156;
+  --tenue:#6B6156;
   --carta:#FBFAF7;
   --bordo:#DAD5CB;
+  --incavo:#EDEAE2;
   --ombra:0 2px 14px rgba(36,31,25,.14);
   --raggio:10px;
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overscroll-behavior:none}
 body{
-  font-family:Archivo,system-ui,sans-serif;
-  color:var(--inchiostro);
-  background:var(--carta);
-  -webkit-text-size-adjust:100%;
+  font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
+  background:var(--carta);-webkit-text-size-adjust:100%;
 }
 #mappa{position:absolute;inset:0}
 
 /* ---------- Intestazione ---------- */
 .testata{
   position:absolute;top:0;left:0;right:0;z-index:5;
-  padding:12px 14px calc(12px + env(safe-area-inset-top));
-  padding-top:calc(12px + env(safe-area-inset-top));
-  display:flex;gap:12px;align-items:flex-start;justify-content:space-between;
+  padding:calc(12px + env(safe-area-inset-top)) 14px 0;
+  display:flex;gap:10px;align-items:flex-start;justify-content:space-between;
   pointer-events:none;
 }
 .marchio{
-  pointer-events:auto;
-  background:var(--carta);border:1px solid var(--bordo);
-  border-radius:var(--raggio);box-shadow:var(--ombra);
-  padding:9px 13px;max-width:min(62vw,340px);
+  pointer-events:auto;background:var(--carta);border:1px solid var(--bordo);
+  border-radius:var(--raggio);box-shadow:var(--ombra);padding:9px 13px;
+  max-width:min(60vw,330px);
 }
-.marchio h1{
-  margin:0;font-size:15px;font-weight:700;letter-spacing:-.015em;line-height:1.2;
-}
-.marchio p{margin:3px 0 0;font-size:11.5px;color:var(--inchiostro-tenue);line-height:1.35}
+.marchio h1{margin:0;font-size:15px;font-weight:700;letter-spacing:-.015em;line-height:1.2}
+.marchio p{margin:3px 0 0;font-size:11.5px;color:var(--tenue);line-height:1.35}
 .tondo{
-  pointer-events:auto;flex:none;
-  width:38px;height:38px;border-radius:50%;
+  pointer-events:auto;flex:none;width:38px;height:38px;border-radius:50%;
   background:var(--carta);border:1px solid var(--bordo);box-shadow:var(--ombra);
-  font-size:16px;font-weight:600;color:var(--inchiostro);
-  cursor:pointer;
+  font-size:16px;font-weight:600;color:var(--inchiostro);cursor:pointer;
 }
 .tondo:focus-visible{outline:2px solid var(--i4);outline-offset:2px}
 
-/* ---------- Giorni ---------- */
-.giorni{
-  position:absolute;z-index:5;left:14px;right:14px;top:78px;
-  display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;
-  scrollbar-width:none;
+/* ---------- Cursore temporale ---------- */
+.tempo{
+  position:absolute;z-index:5;left:14px;right:14px;
+  bottom:calc(14px + env(safe-area-inset-bottom));
+  background:var(--carta);border:1px solid var(--bordo);border-radius:var(--raggio);
+  box-shadow:var(--ombra);padding:10px 13px 8px;
 }
-.giorni::-webkit-scrollbar{display:none}
-.giorni button{
-  flex:none;font-family:inherit;font-size:12px;font-weight:500;
-  padding:6px 11px;border-radius:999px;cursor:pointer;
-  background:var(--carta);border:1px solid var(--bordo);color:var(--inchiostro-tenue);
-  box-shadow:var(--ombra);white-space:nowrap;
+.tempo[hidden]{display:none}
+@media (min-width:820px){.tempo{left:auto;right:14px;width:400px}}
+
+.tempo-testa{display:flex;align-items:baseline;gap:9px;margin-bottom:7px}
+.tempo-data{font-size:13.5px;font-weight:600;letter-spacing:-.01em;flex:1}
+.tempo-conta{font-size:11.5px;color:var(--tenue);font-variant-numeric:tabular-nums}
+.riproduci{
+  flex:none;width:26px;height:26px;border-radius:50%;border:1px solid var(--bordo);
+  background:transparent;cursor:pointer;font-size:11px;color:var(--inchiostro);
+  line-height:1;padding:0;
 }
-.giorni button[aria-pressed="true"]{
-  background:var(--inchiostro);border-color:var(--inchiostro);color:var(--carta);
+.riproduci:focus-visible{outline:2px solid var(--i4);outline-offset:2px}
+
+/* Il grafico dell'andamento sta DIETRO al cursore: la barra non e' solo un
+   comando, mostra quante zone superano 25 in ciascun giorno. */
+.pista{position:relative;height:44px}
+.pista svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.pista input{
+  position:absolute;left:0;right:0;bottom:-2px;width:100%;margin:0;
+  -webkit-appearance:none;appearance:none;background:transparent;height:26px;
 }
-.giorni button:focus-visible{outline:2px solid var(--i4);outline-offset:2px}
+.pista input::-webkit-slider-runnable-track{height:3px;background:var(--bordo);border-radius:2px}
+.pista input::-moz-range-track{height:3px;background:var(--bordo);border-radius:2px}
+.pista input::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:17px;height:17px;border-radius:50%;
+  background:var(--inchiostro);border:2.5px solid var(--carta);margin-top:-7px;
+  box-shadow:0 1px 4px rgba(36,31,25,.35);cursor:grab;
+}
+.pista input::-moz-range-thumb{
+  width:17px;height:17px;border-radius:50%;background:var(--inchiostro);
+  border:2.5px solid var(--carta);box-shadow:0 1px 4px rgba(36,31,25,.35);cursor:grab;
+}
+.pista input:focus-visible::-webkit-slider-thumb{outline:2px solid var(--i4);outline-offset:2px}
+.pista-etichette{display:flex;justify-content:space-between;font-size:10px;
+  color:var(--tenue);margin-top:5px}
 
 /* ---------- Legenda ---------- */
 .legenda{
-  position:absolute;z-index:4;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));
+  position:absolute;z-index:4;right:14px;
+  bottom:calc(122px + env(safe-area-inset-bottom));
   background:var(--carta);border:1px solid var(--bordo);border-radius:var(--raggio);
-  box-shadow:var(--ombra);padding:9px 11px;width:154px;
+  box-shadow:var(--ombra);padding:8px 10px;width:148px;
 }
+@media (min-width:820px){.legenda{right:430px;bottom:calc(14px + env(safe-area-inset-bottom))}}
 .legenda b{display:block;font-size:11px;font-weight:600;margin-bottom:6px}
 .scala{display:flex;height:9px;border-radius:3px;overflow:hidden}
 .scala i{flex:1}
-.scala-note{display:flex;justify-content:space-between;font-size:10px;
-  color:var(--inchiostro-tenue);margin-top:4px}
+.scala-note{display:flex;justify-content:space-between;font-size:10px;color:var(--tenue);margin-top:4px}
 
 /* ---------- Pannello ---------- */
 .pannello{
-  position:absolute;z-index:6;left:0;right:0;bottom:0;
-  background:var(--carta);border-top:1px solid var(--bordo);
-  border-radius:14px 14px 0 0;box-shadow:0 -3px 20px rgba(36,31,25,.16);
+  position:absolute;z-index:6;left:0;right:0;bottom:0;background:var(--carta);
+  border-top:1px solid var(--bordo);border-radius:14px 14px 0 0;
+  box-shadow:0 -3px 20px rgba(36,31,25,.16);
   padding:14px 16px calc(16px + env(safe-area-inset-bottom));
-  transform:translateY(102%);transition:transform .22s ease;
-  max-height:72vh;overflow-y:auto;
+  transform:translateY(102%);transition:transform .24s cubic-bezier(.32,.72,.28,1);
+  max-height:76vh;overflow-y:auto;
 }
 .pannello.aperto{transform:translateY(0)}
 @media (prefers-reduced-motion:reduce){.pannello{transition:none}}
 @media (min-width:820px){
   .pannello{
-    left:14px;right:auto;bottom:14px;width:392px;
-    border:1px solid var(--bordo);border-radius:var(--raggio);
-    max-height:calc(100vh - 200px);
+    left:14px;right:auto;bottom:14px;width:392px;border:1px solid var(--bordo);
+    border-radius:var(--raggio);max-height:calc(100vh - 130px);
     transform:translateX(calc(-100% - 24px));
   }
   .pannello.aperto{transform:translateX(0)}
-  .giorni{left:auto;right:14px;width:auto;max-width:60vw;justify-content:flex-end}
 }
 
 .testa-pannello{display:flex;align-items:flex-start;gap:14px}
-.punteggio{
-  font-size:52px;font-weight:700;line-height:.9;letter-spacing:-.045em;
-  font-variant-numeric:tabular-nums;
-}
-.punteggio small{font-size:15px;font-weight:500;color:var(--inchiostro-tenue);letter-spacing:0}
+.punteggio{font-size:52px;font-weight:700;line-height:.9;letter-spacing:-.045em;
+  font-variant-numeric:tabular-nums;transition:color .2s}
+.punteggio small{font-size:15px;font-weight:500;color:var(--tenue);letter-spacing:0}
 .luogo{flex:1;min-width:0;padding-top:3px}
 .luogo strong{display:block;font-size:14px;font-weight:600;line-height:1.25}
-.luogo span{display:block;font-size:12px;color:var(--inchiostro-tenue);margin-top:2px}
-.chiudi{
-  flex:none;width:28px;height:28px;border-radius:50%;border:1px solid var(--bordo);
-  background:transparent;color:var(--inchiostro-tenue);cursor:pointer;font-size:15px;
-}
+.luogo span{display:block;font-size:12px;color:var(--tenue);margin-top:2px}
+.chiudi{flex:none;width:28px;height:28px;border-radius:50%;border:1px solid var(--bordo);
+  background:transparent;color:var(--tenue);cursor:pointer;font-size:15px}
 .chiudi:focus-visible{outline:2px solid var(--i4);outline-offset:2px}
 
-.racconto{
-  margin:12px 0 0;font-size:13px;line-height:1.5;color:var(--inchiostro);
-  padding:10px 12px;background:#F3F1EB;border-radius:8px;
-}
+/* Curva della cella sugli 8 giorni: la domanda vera e' "quando conviene andare". */
+.curva{margin-top:12px}
+.curva h2{font-size:11.5px;font-weight:600;margin:0 0 6px;color:var(--tenue)}
+.curva svg{width:100%;height:62px;display:block;overflow:visible}
+.curva svg circle{cursor:pointer}
+.curva-etichette{display:flex;justify-content:space-between;font-size:9.5px;
+  color:var(--tenue);margin-top:3px}
+.picco{font-size:12px;margin-top:6px;line-height:1.4}
 
-/* La catena di moltiplicazioni: il modello E' un prodotto, e si vede. */
+.racconto{margin:12px 0 0;font-size:13px;line-height:1.5;padding:10px 12px;
+  background:#F3F1EB;border-radius:8px}
+
 .catena{margin-top:14px}
-.catena h2{
-  font-size:12px;font-weight:600;margin:0 0 9px;color:var(--inchiostro-tenue);
-}
-.fattore{display:grid;grid-template-columns:15px 1fr 40px;gap:9px;
-  align-items:center;margin-bottom:7px}
-.segno{font-size:12px;color:var(--inchiostro-tenue);text-align:center;font-weight:500}
-.barra{position:relative;height:22px;background:#EDEAE2;border-radius:4px;overflow:hidden}
-.barra i{position:absolute;inset:0 auto 0 0;background:var(--i2);border-radius:4px}
+.catena h2{font-size:11.5px;font-weight:600;margin:0 0 9px;color:var(--tenue)}
+.fattore{display:grid;grid-template-columns:15px 1fr 40px;gap:9px;align-items:center;
+  margin-bottom:7px}
+.segno{font-size:12px;color:var(--tenue);text-align:center;font-weight:500}
+.barra{position:relative;height:22px;background:var(--incavo);border-radius:4px;overflow:hidden}
+.barra i{position:absolute;inset:0 auto 0 0;border-radius:4px;transition:width .25s}
 .barra span{position:absolute;left:8px;top:0;line-height:22px;font-size:11.5px;font-weight:500}
-.valore{font-size:12px;text-align:right;font-variant-numeric:tabular-nums;
-  color:var(--inchiostro-tenue)}
+.valore{font-size:12px;text-align:right;font-variant-numeric:tabular-nums;color:var(--tenue)}
 .totale{border-top:1px solid var(--bordo);margin-top:9px;padding-top:9px;
   display:flex;justify-content:space-between;font-size:12.5px;font-weight:600}
 
-.vuoto{padding:8px 0 2px;font-size:13px;line-height:1.5;color:var(--inchiostro-tenue)}
-
 /* ---------- Informazioni ---------- */
-.velo{
-  position:absolute;inset:0;z-index:9;background:rgba(36,31,25,.45);
-  display:none;align-items:flex-end;justify-content:center;
-}
+.velo{position:absolute;inset:0;z-index:9;background:rgba(36,31,25,.45);
+  display:none;align-items:flex-end;justify-content:center}
 .velo.aperto{display:flex}
-.foglio{
-  background:var(--carta);width:100%;max-width:560px;
-  border-radius:14px 14px 0 0;padding:18px 18px calc(20px + env(safe-area-inset-bottom));
-  max-height:86vh;overflow-y:auto;
-}
-@media (min-width:820px){
-  .velo{align-items:center}
-  .foglio{border-radius:var(--raggio);max-height:82vh}
-}
+.foglio{background:var(--carta);width:100%;max-width:560px;border-radius:14px 14px 0 0;
+  padding:18px 18px calc(20px + env(safe-area-inset-bottom));max-height:86vh;overflow-y:auto}
+@media (min-width:820px){.velo{align-items:center}
+  .foglio{border-radius:var(--raggio);max-height:82vh}}
 .foglio h2{margin:0 0 4px;font-size:17px;font-weight:700}
 .foglio h3{margin:18px 0 5px;font-size:13px;font-weight:600}
 .foglio p{margin:0 0 9px;font-size:13px;line-height:1.55;max-width:64ch}
 .foglio a{color:var(--i4)}
-.avviso{
-  background:#FBF0E2;border:1px solid #E8CFA8;border-radius:8px;
-  padding:11px 13px;margin:12px 0;
-}
+.avviso{background:#FBF0E2;border:1px solid #E8CFA8;border-radius:8px;padding:11px 13px;margin:12px 0}
 .avviso p{margin:0;font-size:12.5px;line-height:1.5}
 .avviso p+p{margin-top:7px}
-.attribuzioni{font-size:11px;color:var(--inchiostro-tenue);line-height:1.6;margin-top:16px}
-.bottone{
-  display:block;width:100%;margin-top:16px;padding:11px;border:none;
-  border-radius:8px;background:var(--inchiostro);color:var(--carta);
-  font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
-}
-.stato{
-  position:absolute;inset:0;z-index:8;display:flex;align-items:center;
-  justify-content:center;background:var(--carta);font-size:13px;
-  color:var(--inchiostro-tenue);text-align:center;padding:24px;
-}
+.attribuzioni{font-size:11px;color:var(--tenue);line-height:1.6;margin-top:16px}
+.bottone{display:block;width:100%;margin-top:16px;padding:11px;border:none;border-radius:8px;
+  background:var(--inchiostro);color:var(--carta);font-family:inherit;font-size:14px;
+  font-weight:600;cursor:pointer}
+.stato{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;
+  background:var(--carta);font-size:13px;color:var(--tenue);text-align:center;padding:24px}
 .stato[hidden]{display:none}
 .maplibregl-ctrl-attrib{font-size:10px}
+.maplibregl-ctrl-bottom-left{margin-bottom:118px}
+@media (min-width:820px){.maplibregl-ctrl-bottom-left{margin-bottom:0}}
 </style>
 </head>
 <body>
 
 <div id="mappa"></div>
-
 <div class="stato" id="stato">Carico l'indice…</div>
 
 <header class="testata">
@@ -205,7 +204,19 @@ body{
   <button class="tondo" id="apri-info" aria-label="Informazioni, metodo e avvertenze">i</button>
 </header>
 
-<nav class="giorni" id="giorni" aria-label="Giorno da visualizzare"></nav>
+<section class="tempo" id="tempo" hidden>
+  <div class="tempo-testa">
+    <button class="riproduci" id="riproduci" aria-label="Scorri i giorni">▶</button>
+    <span class="tempo-data" id="tempo-data"></span>
+    <span class="tempo-conta" id="tempo-conta"></span>
+  </div>
+  <div class="pista">
+    <svg id="andamento" aria-hidden="true"></svg>
+    <input type="range" id="cursore" min="0" max="0" step="1" value="0"
+           aria-label="Giorno da visualizzare">
+  </div>
+  <div class="pista-etichette"><span id="et-inizio"></span><span id="et-fine"></span></div>
+</section>
 
 <div class="legenda">
   <b>Indice 0–100</b>
@@ -214,7 +225,7 @@ body{
     <i style="background:var(--i2)"></i><i style="background:var(--i3)"></i>
     <i style="background:var(--i4)"></i><i style="background:var(--i5)"></i>
   </div>
-  <div class="scala-note"><span>condizioni assenti</span><span>ottime</span></div>
+  <div class="scala-note"><span>assenti</span><span>ottime</span></div>
 </div>
 
 <section class="pannello" id="pannello" aria-live="polite">
@@ -226,6 +237,14 @@ body{
     </div>
     <button class="chiudi" id="chiudi" aria-label="Chiudi il dettaglio">×</button>
   </div>
+
+  <div class="curva" id="curva" hidden>
+    <h2>Come cambia nei prossimi giorni</h2>
+    <svg id="curva-svg" viewBox="0 0 300 62" preserveAspectRatio="none"></svg>
+    <div class="curva-etichette"><span id="curva-da"></span><span id="curva-a"></span></div>
+    <p class="picco" id="picco"></p>
+  </div>
+
   <p class="racconto" id="racconto"></p>
   <div class="catena" id="catena"></div>
 </section>
@@ -257,6 +276,12 @@ body{
        questo i valori alti sono rari, e l'indice va letto come confronto fra zone
        nello stesso giorno, non come una probabilità.</p>
 
+    <h3>I giorni futuri non sono una previsione meteo</h3>
+    <p>La pioggia che innesca una buttata cade fra otto e venticinque giorni prima:
+       per i giorni mostrati qui è già caduta ed è già stata misurata. Dalle
+       previsioni arrivano solo temperatura e umidità del suolo, che sono le
+       grandezze più stabili di un modello meteo.</p>
+
     <h3>Perché tanti riquadri restano grigi</h3>
     <p>Perché almeno una condizione manca del tutto. Tocca un riquadro per vedere
        quale: il pannello mostra il conto completo, fattore per fattore.</p>
@@ -271,8 +296,7 @@ body{
       Meteo <a href="https://open-meteo.com">Open-Meteo</a> (CC BY 4.0) ·
       Uso del suolo Corine Land Cover, Copernicus Land Monitoring Service ·
       Quota Copernicus DEM GLO-90, © DLR e.V. 2010–2014 e Airbus DS 2014–2018,
-      distribuito da ESA ·
-      Confini ISTAT via openpolis ·
+      distribuito da ESA · Confini ISTAT via openpolis ·
       Cartografia <a href="https://openfreemap.org">OpenFreeMap</a> e
       <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
     </p>
@@ -282,123 +306,180 @@ body{
 
 <script>
 const SORGENTE = 'data/indice_porcino.geojson';
-
-// Soglie e colori devono restare allineati alla legenda.
 const SOGLIE = [1, 10, 25, 50, 75];
 const COLORI = ['--i0','--i1','--i2','--i3','--i4','--i5']
   .map(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim());
 
-const NOMI_FATTORI = {
-  trigger:'Pioggia al momento giusto',
-  termica:'Temperatura del suolo',
-  umidita:'Umidità attuale',
-  ospite:'Bosco compatibile',
-  esposizione:'Esposizione del versante',
-  gelo:'Nessuna gelata recente'
+const NOMI = {
+  trigger:'Pioggia al momento giusto', termica:'Temperatura del suolo',
+  umidita:'Umidità attuale', ospite:'Bosco compatibile',
+  esposizione:'Esposizione del versante', gelo:'Nessuna gelata recente'
 };
 const ORDINE = ['trigger','termica','umidita','ospite','esposizione','gelo'];
 
-let mappa, datiPerCella = new Map(), giorni = [], giornoSel = 0, cellaSel = null;
-
+let mappa, dati = new Map(), giorni = [], giorno = 0, cella = null;
+let serieNazionale = [], riproduzione = null;
 const $ = id => document.getElementById(id);
+const menoMoto = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-function coloreEspressione(k){
+const fascia = v => SOGLIE.filter(s => v >= s).length;
+const colore = v => COLORI[fascia(v)];
+
+function espressione(k){
   const e = ['step', ['coalesce', ['get','i'+k], 0], COLORI[0]];
   SOGLIE.forEach((s,i) => e.push(s, COLORI[i+1]));
   return e;
 }
 
-function dataItaliana(iso){
-  const d = new Date(iso + 'T12:00:00');
-  return d.toLocaleDateString('it-IT', {weekday:'short', day:'numeric', month:'short'});
+const fmtGiorno = iso => new Date(iso+'T12:00:00')
+  .toLocaleDateString('it-IT', {weekday:'long', day:'numeric', month:'long'});
+const fmtCorto = iso => new Date(iso+'T12:00:00')
+  .toLocaleDateString('it-IT', {weekday:'short', day:'numeric'});
+
+/* Il grafico dietro al cursore: quante zone superano 25 in ciascun giorno.
+   Cosi' la barra non e' solo un comando ma dice se la settimana migliora. */
+function disegnaAndamento(){
+  const svg = $('andamento');
+  const n = serieNazionale.length;
+  if (n < 2){ svg.innerHTML = ''; return; }
+  const max = Math.max(...serieNazionale, 1);
+  const L = 6, R = 6, H = 40;
+  const x = i => L + i * (300 - L - R) / (n - 1);
+  svg.setAttribute('viewBox', '0 0 300 44');
+  svg.setAttribute('preserveAspectRatio','none');
+  const larg = Math.max(4, (300 - L - R) / n * 0.5);
+  svg.innerHTML = serieNazionale.map((v,i) => {
+    const h = Math.max(2, v / max * H);
+    return `<rect x="${x(i) - larg/2}" y="${H - h + 2}" width="${larg}" height="${h}"
+             rx="1.5" fill="${i === giorno ? 'var(--i4)' : 'var(--incavo)'}"/>`;
+  }).join('');
 }
 
-function costruisciGiorni(){
-  const c = $('giorni');
-  c.innerHTML = '';
-  if (giorni.length < 2) return;
-  giorni.forEach((g,k) => {
-    const b = document.createElement('button');
-    b.textContent = k === 0 ? 'Oggi' : dataItaliana(g);
-    b.setAttribute('aria-pressed', k === giornoSel);
-    b.onclick = () => {
-      giornoSel = k;
-      mappa.setPaintProperty('celle','fill-color', coloreEspressione(k));
-      [...c.children].forEach((x,j) => x.setAttribute('aria-pressed', j === k));
-      if (cellaSel) mostra(cellaSel);
-    };
-    c.appendChild(b);
+function aggiornaTempo(){
+  $('tempo-data').textContent = fmtGiorno(giorni[giorno]);
+  $('tempo-conta').textContent = serieNazionale[giorno] + ' zone sopra 25';
+  disegnaAndamento();
+  mappa.setPaintProperty('celle','fill-color', espressione(giorno));
+  if (cella) mostra(cella);
+}
+
+/* Curva della cella selezionata: area + linea + punti cliccabili. */
+function disegnaCurva(p){
+  if (giorni.length < 2){ $('curva').hidden = true; return; }
+  $('curva').hidden = false;
+  const v = giorni.map((_,k) => p['i'+k] ?? 0);
+  const max = Math.max(10, ...v);
+  const L = 8, R = 8, T = 6, B = 50;
+  const x = i => L + i * (300 - L - R) / (v.length - 1);
+  const y = q => B - (q / max) * (B - T);
+  const linea = v.map((q,i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(q).toFixed(1)}`).join('');
+  const area = `${linea}L${x(v.length-1)},${B}L${x(0)},${B}Z`;
+  const punti = v.map((q,i) =>
+    `<circle cx="${x(i).toFixed(1)}" cy="${y(q).toFixed(1)}" r="${i===giorno?4.5:3}"
+       fill="${colore(q)}" stroke="var(--inchiostro)"
+       stroke-width="${i===giorno?1.8:1}" data-g="${i}"><title>${
+       fmtCorto(giorni[i])}: ${q}</title></circle>`).join('');
+  $('curva-svg').innerHTML =
+    `<path d="${area}" fill="var(--incavo)"/>
+     <path d="${linea}" fill="none" stroke="var(--tenue)" stroke-width="1.4"
+       stroke-linejoin="round"/>${punti}`;
+  $('curva-svg').querySelectorAll('circle').forEach(c => {
+    c.onclick = () => { giorno = +c.dataset.g; $('cursore').value = giorno; aggiornaTempo(); };
   });
+  $('curva-da').textContent = fmtCorto(giorni[0]);
+  $('curva-a').textContent = fmtCorto(giorni[giorni.length-1]);
+
+  const best = v.indexOf(Math.max(...v));
+  const oggi = v[0];
+  $('picco').textContent = Math.max(...v) === 0
+    ? 'Condizioni assenti per tutta la settimana.'
+    : best === 0
+      ? `Il massimo della settimana è oggi (${oggi}).`
+      : `Il massimo previsto è ${fmtCorto(giorni[best])}, con ${v[best]}` +
+        (v[best] > oggi ? ` contro ${oggi} di oggi.` : '.');
 }
 
-function frase(p){
+function frase(p, v){
   const d = p.dettaglio, f = p.fattori;
   if (!d.pioggia)
     return 'Nessuna pioggia sufficiente negli ultimi venticinque giorni: senza un ' +
            'evento che superi i 25 millimetri in tre giorni non parte una buttata.';
   let t = `Sono caduti ${d.pioggia.mm72} mm in tre giorni, ${d.pioggia.giorni_fa} ` +
-          `giorni fa. Il suolo ora è a ${d.suolo_6cm} gradi a sei centimetri.`;
+          `giorni fa. Il suolo è a ${d.suolo_6cm} gradi a sei centimetri.`;
   const deboli = ORDINE.filter(k => f[k] < 0.35 && k !== 'esposizione');
   if (deboli.length)
     t += ` Il punteggio resta basso perché manca soprattutto: ${
-      deboli.map(k => NOMI_FATTORI[k].toLowerCase()).join(', ')}.`;
-  else if (p.indiceGiorno >= 50)
-    t += ' Tutte le condizioni principali sono soddisfatte insieme.';
+      deboli.map(k => NOMI[k].toLowerCase()).join(', ')}.`;
+  else if (v >= 50) t += ' Tutte le condizioni principali sono soddisfatte insieme.';
   return t;
 }
 
 function mostra(id){
-  cellaSel = id;
-  const p = datiPerCella.get(id);
+  cella = id;
+  const p = dati.get(id);
   if (!p) return;
-  const v = p['i' + giornoSel] ?? p.oggi ?? 0;
-  p.indiceGiorno = v;
+  const v = p['i'+giorno] ?? p.oggi ?? 0;
 
   $('punteggio').innerHTML = v + '<small>/100</small>';
-  $('punteggio').style.color = COLORI[
-    SOGLIE.filter(s => v >= s).length];
+  $('punteggio').style.color = colore(v);
   $('titolo-cella').textContent =
-    `${p.macroregione.charAt(0).toUpperCase() + p.macroregione.slice(1)}, ${p.quota} m`;
-  $('sotto-cella').textContent =
-    `${Math.round(p.bosco*100)}% di bosco · riquadro ${id}`;
-  $('racconto').textContent = frase(p);
+    `${p.macroregione[0].toUpperCase() + p.macroregione.slice(1)}, ${p.quota} m`;
+  $('sotto-cella').textContent = `${Math.round(p.bosco*100)}% di bosco · riquadro ${id}`;
+
+  disegnaCurva(p);
+  $('racconto').textContent = frase(p, v);
 
   const c = $('catena');
-  c.innerHTML = '<h2>Il conto, fattore per fattore</h2>';
+  c.innerHTML = '<h2>Il conto di oggi, fattore per fattore</h2>';
   ORDINE.forEach((k,i) => {
     const val = p.fattori[k];
-    const riga = document.createElement('div');
-    riga.className = 'fattore';
-    riga.innerHTML =
+    const r = document.createElement('div');
+    r.className = 'fattore';
+    r.innerHTML =
       `<div class="segno">${i ? '×' : ''}</div>
        <div class="barra"><i style="width:${Math.min(val,1)*100}%;background:${
          val < .35 ? 'var(--i0)' : val < .7 ? 'var(--i2)' : 'var(--i3)'
-       }"></i><span>${NOMI_FATTORI[k]}</span></div>
+       }"></i><span>${NOMI[k]}</span></div>
        <div class="valore">${val.toFixed(2)}</div>`;
-    c.appendChild(riga);
+    c.appendChild(r);
   });
-  const tot = document.createElement('div');
-  tot.className = 'totale';
-  tot.innerHTML = `<span>Prodotto × 100</span><span>${v}</span>`;
-  c.appendChild(tot);
+  const t = document.createElement('div');
+  t.className = 'totale';
+  t.innerHTML = `<span>Prodotto × 100</span><span>${p.oggi}</span>`;
+  c.appendChild(t);
 
   $('pannello').classList.add('aperto');
 }
 
 function chiudi(){
   $('pannello').classList.remove('aperto');
-  cellaSel = null;
+  cella = null;
   if (mappa.getLayer('scelta')) mappa.setFilter('scelta', ['==', ['get','id'], '']);
 }
 
+function alterna(){
+  if (riproduzione){
+    clearInterval(riproduzione); riproduzione = null;
+    $('riproduci').textContent = '▶';
+    $('riproduci').setAttribute('aria-label','Scorri i giorni');
+    return;
+  }
+  $('riproduci').textContent = '❙❙';
+  $('riproduci').setAttribute('aria-label','Ferma lo scorrimento');
+  riproduzione = setInterval(() => {
+    giorno = (giorno + 1) % giorni.length;
+    $('cursore').value = giorno;
+    aggiornaTempo();
+  }, menoMoto ? 1600 : 900);
+}
+
 mappa = new maplibregl.Map({
-  container:'mappa',
-  style:'https://tiles.openfreemap.org/styles/positron',
-  center:[12.5, 42.6], zoom:5.1, minZoom:4.4, maxZoom:11,
+  container:'mappa', style:'https://tiles.openfreemap.org/styles/positron',
+  center:[12.5,42.6], zoom:5.1, minZoom:4.4, maxZoom:11,
   attributionControl:{compact:true}
 });
-mappa.addControl(new maplibregl.NavigationControl({showCompass:false}), 'bottom-left');
-mappa.addControl(new maplibregl.GeolocateControl({trackUserLocation:false}), 'bottom-left');
+mappa.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-left');
+mappa.addControl(new maplibregl.GeolocateControl({trackUserLocation:false}),'bottom-left');
 
 mappa.on('load', async () => {
   let geo;
@@ -406,27 +487,30 @@ mappa.on('load', async () => {
     const r = await fetch(SORGENTE, {cache:'no-cache'});
     if (!r.ok) throw new Error(r.status);
     geo = await r.json();
-  } catch (e) {
-    $('stato').innerHTML =
-      'Non riesco a caricare i dati dell\'indice.<br>Riprova fra qualche minuto.';
+  } catch(e) {
+    $('stato').innerHTML = 'Non riesco a caricare i dati dell\'indice.<br>Riprova fra qualche minuto.';
     return;
   }
   $('stato').hidden = true;
 
   giorni = geo.metadata.giorni || [];
-  geo.features.forEach(f => datiPerCella.set(f.properties.id, f.properties));
+  geo.features.forEach(f => dati.set(f.properties.id, f.properties));
+
+  serieNazionale = giorni.map((_,k) =>
+    geo.features.reduce((n,f) => n + ((f.properties['i'+k] ?? 0) >= 25 ? 1 : 0), 0));
 
   const agg = new Date(geo.metadata.generato);
   $('sottotitolo').textContent =
     `${geo.metadata.n_celle.toLocaleString('it-IT')} zone boscate · aggiornato il ` +
-    agg.toLocaleDateString('it-IT', {day:'numeric', month:'long'});
+    agg.toLocaleDateString('it-IT',{day:'numeric',month:'long'});
 
-  mappa.addSource('indice', {type:'geojson', data:geo});
+  mappa.addSource('indice',{type:'geojson',data:geo});
   mappa.addLayer({
     id:'celle', type:'fill', source:'indice',
     paint:{
-      'fill-color': coloreEspressione(0),
-      'fill-opacity':['interpolate',['linear'],['zoom'], 5,.72, 9,.55]
+      'fill-color': espressione(0),
+      'fill-color-transition': {duration: menoMoto ? 0 : 260},
+      'fill-opacity':['interpolate',['linear'],['zoom'],5,.72,9,.55]
     }
   });
   mappa.addLayer({
@@ -435,21 +519,35 @@ mappa.on('load', async () => {
     paint:{'line-color':'#241F19','line-width':2}
   });
 
-  costruisciGiorni();
+  if (giorni.length > 1){
+    $('tempo').hidden = false;
+    const c = $('cursore');
+    c.max = giorni.length - 1;
+    c.oninput = () => {
+      if (riproduzione) alterna();
+      giorno = +c.value;
+      aggiornaTempo();
+    };
+    $('et-inizio').textContent = fmtCorto(giorni[0]);
+    $('et-fine').textContent = fmtCorto(giorni[giorni.length-1]);
+    $('riproduci').onclick = alterna;
+    aggiornaTempo();
+  }
 
   mappa.on('click','celle', e => {
     const id = e.features[0].properties.id;
-    mappa.setFilter('scelta', ['==', ['get','id'], id]);
+    mappa.setFilter('scelta',['==',['get','id'],id]);
     mostra(id);
   });
-  mappa.on('mouseenter','celle', () => mappa.getCanvas().style.cursor='pointer');
-  mappa.on('mouseleave','celle', () => mappa.getCanvas().style.cursor='');
+  mappa.on('mouseenter','celle',()=>mappa.getCanvas().style.cursor='pointer');
+  mappa.on('mouseleave','celle',()=>mappa.getCanvas().style.cursor='');
 
-  if (!localStorage.getItem('avviso-visto')) {
-    // Nota: su claude.ai localStorage e' bloccato; in produzione funziona.
-    try { $('velo').classList.add('aperto'); localStorage.setItem('avviso-visto','1'); }
-    catch(_) { $('velo').classList.add('aperto'); }
-  }
+  try {
+    if (!localStorage.getItem('avviso-visto')){
+      $('velo').classList.add('aperto');
+      localStorage.setItem('avviso-visto','1');
+    }
+  } catch(_) { $('velo').classList.add('aperto'); }
 });
 
 $('chiudi').onclick = chiudi;
@@ -457,9 +555,17 @@ $('apri-info').onclick = () => $('velo').classList.add('aperto');
 $('chiudi-info').onclick = () => $('velo').classList.remove('aperto');
 $('velo').onclick = e => { if (e.target === $('velo')) $('velo').classList.remove('aperto'); };
 document.addEventListener('keydown', e => {
-  if (e.key !== 'Escape') return;
-  if ($('velo').classList.contains('aperto')) $('velo').classList.remove('aperto');
-  else chiudi();
+  if (e.key === 'Escape'){
+    if ($('velo').classList.contains('aperto')) $('velo').classList.remove('aperto');
+    else chiudi();
+    return;
+  }
+  if (giorni.length < 2 || document.activeElement === $('cursore')) return;
+  if (e.key === 'ArrowRight' && giorno < giorni.length-1){ giorno++; }
+  else if (e.key === 'ArrowLeft' && giorno > 0){ giorno--; }
+  else return;
+  $('cursore').value = giorno;
+  aggiornaTempo();
 });
 </script>
 </body>
