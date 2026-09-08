@@ -16,8 +16,7 @@ on:
 
 permissions:
   contents: write           # per scrivere lo storico sulla Release
-  pages: write              # per pubblicare il sito
-  id-token: write           # richiesto da deploy-pages
+  deployments: write        # per registrare la pubblicazione su Cloudflare
 
 # Se un'esecuzione e' ancora in corso quando parte la successiva, la nuova
 # aspetta invece di sovrapporsi: due processi che scrivono lo stesso storico
@@ -29,9 +28,6 @@ concurrency:
 jobs:
   aggiorna:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.pubblica.outputs.page_url }}
 
     steps:
       - uses: actions/checkout@v4
@@ -117,9 +113,23 @@ jobs:
             echo '```'
           } >> $GITHUB_STEP_SUMMARY
 
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      # Pubblicazione su Cloudflare Pages.
+      #
+      # Il verso del flusso e' importante: NON e' Cloudflare a costruire il sito
+      # leggendo il repository, perche' la cartella sito/ non e' in git e per
+      # generarla servono Python e lo storico dalla Release. E' GitHub Actions a
+      # fare tutto il lavoro e a consegnare a Cloudflare la cartella gia' pronta
+      # ("direct upload").
+      #
+      # Nota: l'azione cloudflare/pages-action, che si trova in molte guide, e'
+      # deprecata. Quella buona e' wrangler-action.
+      - name: Pubblica su Cloudflare Pages
+        id: pubblica
+        uses: cloudflare/wrangler-action@v4
         with:
-          path: sito
-      - id: pubblica
-        uses: actions/deploy-pages@v4
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy sito --project-name=mappafunghi --branch=main
+
+      - name: Indirizzo del sito
+        run: echo "🌐 https://mappafunghi.pages.dev" >> $GITHUB_STEP_SUMMARY
