@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Indice di crescita dei funghi — Italia</title>
+<meta name="description" content="Indice previsionale di crescita del porcino in Italia, ricalcolato ogni giorno da un modello deterministico su dati meteo, uso del suolo e morfologia.">
+
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+
+<style>
+:root{
+  /* Scala dell'indice: dal lichene al cappello del porcino.
+     Non e' un gradiente decorativo: i colori vengono dal soggetto. */
+  --i0:#DDDCD5;  --i1:#C2CBAE;  --i2:#9CB077;
+  --i3:#D9AE55;  --i4:#B9722E;  --i5:#7A3B18;
+
+  --inchiostro:#241F19;
+  --inchiostro-tenue:#6B6156;
+  --carta:#FBFAF7;
+  --bordo:#DAD5CB;
+  --ombra:0 2px 14px rgba(36,31,25,.14);
+  --raggio:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overscroll-behavior:none}
+body{
+  font-family:Archivo,system-ui,sans-serif;
+  color:var(--inchiostro);
+  background:var(--carta);
+  -webkit-text-size-adjust:100%;
+}
+#mappa{position:absolute;inset:0}
+
+/* ---------- Intestazione ---------- */
+.testata{
+  position:absolute;top:0;left:0;right:0;z-index:5;
+  padding:12px 14px calc(12px + env(safe-area-inset-top));
+  padding-top:calc(12px + env(safe-area-inset-top));
+  display:flex;gap:12px;align-items:flex-start;justify-content:space-between;
+  pointer-events:none;
+}
+.marchio{
+  pointer-events:auto;
+  background:var(--carta);border:1px solid var(--bordo);
+  border-radius:var(--raggio);box-shadow:var(--ombra);
+  padding:9px 13px;max-width:min(62vw,340px);
+}
+.marchio h1{
+  margin:0;font-size:15px;font-weight:700;letter-spacing:-.015em;line-height:1.2;
+}
+.marchio p{margin:3px 0 0;font-size:11.5px;color:var(--inchiostro-tenue);line-height:1.35}
+.tondo{
+  pointer-events:auto;flex:none;
+  width:38px;height:38px;border-radius:50%;
+  background:var(--carta);border:1px solid var(--bordo);box-shadow:var(--ombra);
+  font-size:16px;font-weight:600;color:var(--inchiostro);
+  cursor:pointer;
+}
+.tondo:focus-visible{outline:2px solid var(--i4);outline-offset:2px}
+
+/* ---------- Giorni ---------- */
+.giorni{
+  position:absolute;z-index:5;left:14px;right:14px;top:78px;
+  display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;
+  scrollbar-width:none;
+}
+.giorni::-webkit-scrollbar{display:none}
+.giorni button{
+  flex:none;font-family:inherit;font-size:12px;font-weight:500;
+  padding:6px 11px;border-radius:999px;cursor:pointer;
+  background:var(--carta);border:1px solid var(--bordo);color:var(--inchiostro-tenue);
+  box-shadow:var(--ombra);white-space:nowrap;
+}
+.giorni button[aria-pressed="true"]{
+  background:var(--inchiostro);border-color:var(--inchiostro);color:var(--carta);
+}
+.giorni button:focus-visible{outline:2px solid var(--i4);outline-offset:2px}
+
+/* ---------- Legenda ---------- */
+.legenda{
+  position:absolute;z-index:4;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));
+  background:var(--carta);border:1px solid var(--bordo);border-radius:var(--raggio);
+  box-shadow:var(--ombra);padding:9px 11px;width:154px;
+}
+.legenda b{display:block;font-size:11px;font-weight:600;margin-bottom:6px}
+.scala{display:flex;height:9px;border-radius:3px;overflow:hidden}
+.scala i{flex:1}
+.scala-note{display:flex;justify-content:space-between;font-size:10px;
+  color:var(--inchiostro-tenue);margin-top:4px}
+
+/* ---------- Pannello ---------- */
+.pannello{
+  position:absolute;z-index:6;left:0;right:0;bottom:0;
+  background:var(--carta);border-top:1px solid var(--bordo);
+  border-radius:14px 14px 0 0;box-shadow:0 -3px 20px rgba(36,31,25,.16);
+  padding:14px 16px calc(16px + env(safe-area-inset-bottom));
+  transform:translateY(102%);transition:transform .22s ease;
+  max-height:72vh;overflow-y:auto;
+}
+.pannello.aperto{transform:translateY(0)}
+@media (prefers-reduced-motion:reduce){.pannello{transition:none}}
+@media (min-width:820px){
+  .pannello{
+    left:14px;right:auto;bottom:14px;width:392px;
+    border:1px solid var(--bordo);border-radius:var(--raggio);
+    max-height:calc(100vh - 200px);
+    transform:translateX(calc(-100% - 24px));
+  }
+  .pannello.aperto{transform:translateX(0)}
+  .giorni{left:auto;right:14px;width:auto;max-width:60vw;justify-content:flex-end}
+}
+
+.testa-pannello{display:flex;align-items:flex-start;gap:14px}
+.punteggio{
+  font-size:52px;font-weight:700;line-height:.9;letter-spacing:-.045em;
+  font-variant-numeric:tabular-nums;
+}
+.punteggio small{font-size:15px;font-weight:500;color:var(--inchiostro-tenue);letter-spacing:0}
+.luogo{flex:1;min-width:0;padding-top:3px}
+.luogo strong{display:block;font-size:14px;font-weight:600;line-height:1.25}
+.luogo span{display:block;font-size:12px;color:var(--inchiostro-tenue);margin-top:2px}
+.chiudi{
+  flex:none;width:28px;height:28px;border-radius:50%;border:1px solid var(--bordo);
+  background:transparent;color:var(--inchiostro-tenue);cursor:pointer;font-size:15px;
+}
+.chiudi:focus-visible{outline:2px solid var(--i4);outline-offset:2px}
+
+.racconto{
+  margin:12px 0 0;font-size:13px;line-height:1.5;color:var(--inchiostro);
+  padding:10px 12px;background:#F3F1EB;border-radius:8px;
+}
+
+/* La catena di moltiplicazioni: il modello E' un prodotto, e si vede. */
+.catena{margin-top:14px}
+.catena h2{
+  font-size:12px;font-weight:600;margin:0 0 9px;color:var(--inchiostro-tenue);
+}
+.fattore{display:grid;grid-template-columns:15px 1fr 40px;gap:9px;
+  align-items:center;margin-bottom:7px}
+.segno{font-size:12px;color:var(--inchiostro-tenue);text-align:center;font-weight:500}
+.barra{position:relative;height:22px;background:#EDEAE2;border-radius:4px;overflow:hidden}
+.barra i{position:absolute;inset:0 auto 0 0;background:var(--i2);border-radius:4px}
+.barra span{position:absolute;left:8px;top:0;line-height:22px;font-size:11.5px;font-weight:500}
+.valore{font-size:12px;text-align:right;font-variant-numeric:tabular-nums;
+  color:var(--inchiostro-tenue)}
+.totale{border-top:1px solid var(--bordo);margin-top:9px;padding-top:9px;
+  display:flex;justify-content:space-between;font-size:12.5px;font-weight:600}
+
+.vuoto{padding:8px 0 2px;font-size:13px;line-height:1.5;color:var(--inchiostro-tenue)}
+
+/* ---------- Informazioni ---------- */
+.velo{
+  position:absolute;inset:0;z-index:9;background:rgba(36,31,25,.45);
+  display:none;align-items:flex-end;justify-content:center;
+}
+.velo.aperto{display:flex}
+.foglio{
+  background:var(--carta);width:100%;max-width:560px;
+  border-radius:14px 14px 0 0;padding:18px 18px calc(20px + env(safe-area-inset-bottom));
+  max-height:86vh;overflow-y:auto;
+}
+@media (min-width:820px){
+  .velo{align-items:center}
+  .foglio{border-radius:var(--raggio);max-height:82vh}
+}
+.foglio h2{margin:0 0 4px;font-size:17px;font-weight:700}
+.foglio h3{margin:18px 0 5px;font-size:13px;font-weight:600}
+.foglio p{margin:0 0 9px;font-size:13px;line-height:1.55;max-width:64ch}
+.foglio a{color:var(--i4)}
+.avviso{
+  background:#FBF0E2;border:1px solid #E8CFA8;border-radius:8px;
+  padding:11px 13px;margin:12px 0;
+}
+.avviso p{margin:0;font-size:12.5px;line-height:1.5}
+.avviso p+p{margin-top:7px}
+.attribuzioni{font-size:11px;color:var(--inchiostro-tenue);line-height:1.6;margin-top:16px}
+.bottone{
+  display:block;width:100%;margin-top:16px;padding:11px;border:none;
+  border-radius:8px;background:var(--inchiostro);color:var(--carta);
+  font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+}
+.stato{
+  position:absolute;inset:0;z-index:8;display:flex;align-items:center;
+  justify-content:center;background:var(--carta);font-size:13px;
+  color:var(--inchiostro-tenue);text-align:center;padding:24px;
+}
+.stato[hidden]{display:none}
+.maplibregl-ctrl-attrib{font-size:10px}
+</style>
+</head>
+<body>
+
+<div id="mappa"></div>
+
+<div class="stato" id="stato">Carico l'indice…</div>
+
+<header class="testata">
+  <div class="marchio">
+    <h1>Dove stanno crescendo i porcini</h1>
+    <p id="sottotitolo">Indice ricalcolato ogni giorno</p>
+  </div>
+  <button class="tondo" id="apri-info" aria-label="Informazioni, metodo e avvertenze">i</button>
+</header>
+
+<nav class="giorni" id="giorni" aria-label="Giorno da visualizzare"></nav>
+
+<div class="legenda">
+  <b>Indice 0–100</b>
+  <div class="scala" aria-hidden="true">
+    <i style="background:var(--i0)"></i><i style="background:var(--i1)"></i>
+    <i style="background:var(--i2)"></i><i style="background:var(--i3)"></i>
+    <i style="background:var(--i4)"></i><i style="background:var(--i5)"></i>
+  </div>
+  <div class="scala-note"><span>condizioni assenti</span><span>ottime</span></div>
+</div>
+
+<section class="pannello" id="pannello" aria-live="polite">
+  <div class="testa-pannello">
+    <div class="punteggio" id="punteggio">—</div>
+    <div class="luogo">
+      <strong id="titolo-cella"></strong>
+      <span id="sotto-cella"></span>
+    </div>
+    <button class="chiudi" id="chiudi" aria-label="Chiudi il dettaglio">×</button>
+  </div>
+  <p class="racconto" id="racconto"></p>
+  <div class="catena" id="catena"></div>
+</section>
+
+<div class="velo" id="velo" role="dialog" aria-modal="true" aria-labelledby="titolo-info">
+  <div class="foglio">
+    <h2 id="titolo-info">Come si legge questa mappa</h2>
+    <p>Ogni riquadro copre circa dieci chilometri per otto. Il numero stima quanto
+       le condizioni ambientali siano favorevoli alla fruttificazione del porcino
+       in quel riquadro, non se ci siano funghi.</p>
+
+    <div class="avviso">
+      <p><strong>La raccolta è regolata da leggi regionali.</strong> Permessi,
+         quantitativi massimi, giornate di divieto, aree interdette e diametro
+         minimo cambiano da regione a regione e spesso da parco a parco.
+         Informati presso l'ente competente prima di raccogliere.</p>
+      <p><strong>Non consumare funghi che non sai identificare con certezza.</strong>
+         Fai controllare il raccolto da un ispettorato micologico dell'ASL. Questa
+         mappa non riconosce specie e non lo farà mai.</p>
+    </div>
+
+    <h3>Da cosa nasce il punteggio</h3>
+    <p>Da sei condizioni moltiplicate fra loro: una pioggia abbondante caduta al
+       momento giusto, la temperatura del suolo a sei e diciotto centimetri,
+       l'umidità presente ora, la presenza di bosco compatibile alla quota giusta,
+       l'esposizione del versante e l'eventuale gelata recente.</p>
+    <p>Si moltiplicano perché sono condizioni necessarie, non punti che si sommano:
+       un bosco perfetto rimasto senz'acqua per un mese non produce niente. Per
+       questo i valori alti sono rari, e l'indice va letto come confronto fra zone
+       nello stesso giorno, non come una probabilità.</p>
+
+    <h3>Perché tanti riquadri restano grigi</h3>
+    <p>Perché almeno una condizione manca del tutto. Tocca un riquadro per vedere
+       quale: il pannello mostra il conto completo, fattore per fattore.</p>
+
+    <h3>Quanto è affidabile</h3>
+    <p>È un modello deterministico, non una previsione verificata sul campo.
+       I parametri vengono dalla letteratura micologica e sono ancora da tarare
+       sulle osservazioni reali. Trattalo come un indizio su dove valga la pena
+       cercare, mai come una garanzia.</p>
+
+    <p class="attribuzioni">
+      Meteo <a href="https://open-meteo.com">Open-Meteo</a> (CC BY 4.0) ·
+      Uso del suolo Corine Land Cover, Copernicus Land Monitoring Service ·
+      Quota Copernicus DEM GLO-90, © DLR e.V. 2010–2014 e Airbus DS 2014–2018,
+      distribuito da ESA ·
+      Confini ISTAT via openpolis ·
+      Cartografia <a href="https://openfreemap.org">OpenFreeMap</a> e
+      <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
+    </p>
+    <button class="bottone" id="chiudi-info">Ho capito</button>
+  </div>
+</div>
+
+<script>
+const SORGENTE = 'data/indice_porcino.geojson';
+
+// Soglie e colori devono restare allineati alla legenda.
+const SOGLIE = [1, 10, 25, 50, 75];
+const COLORI = ['--i0','--i1','--i2','--i3','--i4','--i5']
+  .map(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim());
+
+const NOMI_FATTORI = {
+  trigger:'Pioggia al momento giusto',
+  termica:'Temperatura del suolo',
+  umidita:'Umidità attuale',
+  ospite:'Bosco compatibile',
+  esposizione:'Esposizione del versante',
+  gelo:'Nessuna gelata recente'
+};
+const ORDINE = ['trigger','termica','umidita','ospite','esposizione','gelo'];
+
+let mappa, datiPerCella = new Map(), giorni = [], giornoSel = 0, cellaSel = null;
+
+const $ = id => document.getElementById(id);
+
+function coloreEspressione(k){
+  const e = ['step', ['coalesce', ['get','i'+k], 0], COLORI[0]];
+  SOGLIE.forEach((s,i) => e.push(s, COLORI[i+1]));
+  return e;
+}
+
+function dataItaliana(iso){
+  const d = new Date(iso + 'T12:00:00');
+  return d.toLocaleDateString('it-IT', {weekday:'short', day:'numeric', month:'short'});
+}
+
+function costruisciGiorni(){
+  const c = $('giorni');
+  c.innerHTML = '';
+  if (giorni.length < 2) return;
+  giorni.forEach((g,k) => {
+    const b = document.createElement('button');
+    b.textContent = k === 0 ? 'Oggi' : dataItaliana(g);
+    b.setAttribute('aria-pressed', k === giornoSel);
+    b.onclick = () => {
+      giornoSel = k;
+      mappa.setPaintProperty('celle','fill-color', coloreEspressione(k));
+      [...c.children].forEach((x,j) => x.setAttribute('aria-pressed', j === k));
+      if (cellaSel) mostra(cellaSel);
+    };
+    c.appendChild(b);
+  });
+}
+
+function frase(p){
+  const d = p.dettaglio, f = p.fattori;
+  if (!d.pioggia)
+    return 'Nessuna pioggia sufficiente negli ultimi venticinque giorni: senza un ' +
+           'evento che superi i 25 millimetri in tre giorni non parte una buttata.';
+  let t = `Sono caduti ${d.pioggia.mm72} mm in tre giorni, ${d.pioggia.giorni_fa} ` +
+          `giorni fa. Il suolo ora è a ${d.suolo_6cm} gradi a sei centimetri.`;
+  const deboli = ORDINE.filter(k => f[k] < 0.35 && k !== 'esposizione');
+  if (deboli.length)
+    t += ` Il punteggio resta basso perché manca soprattutto: ${
+      deboli.map(k => NOMI_FATTORI[k].toLowerCase()).join(', ')}.`;
+  else if (p.indiceGiorno >= 50)
+    t += ' Tutte le condizioni principali sono soddisfatte insieme.';
+  return t;
+}
+
+function mostra(id){
+  cellaSel = id;
+  const p = datiPerCella.get(id);
+  if (!p) return;
+  const v = p['i' + giornoSel] ?? p.oggi ?? 0;
+  p.indiceGiorno = v;
+
+  $('punteggio').innerHTML = v + '<small>/100</small>';
+  $('punteggio').style.color = COLORI[
+    SOGLIE.filter(s => v >= s).length];
+  $('titolo-cella').textContent =
+    `${p.macroregione.charAt(0).toUpperCase() + p.macroregione.slice(1)}, ${p.quota} m`;
+  $('sotto-cella').textContent =
+    `${Math.round(p.bosco*100)}% di bosco · riquadro ${id}`;
+  $('racconto').textContent = frase(p);
+
+  const c = $('catena');
+  c.innerHTML = '<h2>Il conto, fattore per fattore</h2>';
+  ORDINE.forEach((k,i) => {
+    const val = p.fattori[k];
+    const riga = document.createElement('div');
+    riga.className = 'fattore';
+    riga.innerHTML =
+      `<div class="segno">${i ? '×' : ''}</div>
+       <div class="barra"><i style="width:${Math.min(val,1)*100}%;background:${
+         val < .35 ? 'var(--i0)' : val < .7 ? 'var(--i2)' : 'var(--i3)'
+       }"></i><span>${NOMI_FATTORI[k]}</span></div>
+       <div class="valore">${val.toFixed(2)}</div>`;
+    c.appendChild(riga);
+  });
+  const tot = document.createElement('div');
+  tot.className = 'totale';
+  tot.innerHTML = `<span>Prodotto × 100</span><span>${v}</span>`;
+  c.appendChild(tot);
+
+  $('pannello').classList.add('aperto');
+}
+
+function chiudi(){
+  $('pannello').classList.remove('aperto');
+  cellaSel = null;
+  if (mappa.getLayer('scelta')) mappa.setFilter('scelta', ['==', ['get','id'], '']);
+}
+
+mappa = new maplibregl.Map({
+  container:'mappa',
+  style:'https://tiles.openfreemap.org/styles/positron',
+  center:[12.5, 42.6], zoom:5.1, minZoom:4.4, maxZoom:11,
+  attributionControl:{compact:true}
+});
+mappa.addControl(new maplibregl.NavigationControl({showCompass:false}), 'bottom-left');
+mappa.addControl(new maplibregl.GeolocateControl({trackUserLocation:false}), 'bottom-left');
+
+mappa.on('load', async () => {
+  let geo;
+  try {
+    const r = await fetch(SORGENTE, {cache:'no-cache'});
+    if (!r.ok) throw new Error(r.status);
+    geo = await r.json();
+  } catch (e) {
+    $('stato').innerHTML =
+      'Non riesco a caricare i dati dell\'indice.<br>Riprova fra qualche minuto.';
+    return;
+  }
+  $('stato').hidden = true;
+
+  giorni = geo.metadata.giorni || [];
+  geo.features.forEach(f => datiPerCella.set(f.properties.id, f.properties));
+
+  const agg = new Date(geo.metadata.generato);
+  $('sottotitolo').textContent =
+    `${geo.metadata.n_celle.toLocaleString('it-IT')} zone boscate · aggiornato il ` +
+    agg.toLocaleDateString('it-IT', {day:'numeric', month:'long'});
+
+  mappa.addSource('indice', {type:'geojson', data:geo});
+  mappa.addLayer({
+    id:'celle', type:'fill', source:'indice',
+    paint:{
+      'fill-color': coloreEspressione(0),
+      'fill-opacity':['interpolate',['linear'],['zoom'], 5,.72, 9,.55]
+    }
+  });
+  mappa.addLayer({
+    id:'scelta', type:'line', source:'indice',
+    filter:['==',['get','id'],''],
+    paint:{'line-color':'#241F19','line-width':2}
+  });
+
+  costruisciGiorni();
+
+  mappa.on('click','celle', e => {
+    const id = e.features[0].properties.id;
+    mappa.setFilter('scelta', ['==', ['get','id'], id]);
+    mostra(id);
+  });
+  mappa.on('mouseenter','celle', () => mappa.getCanvas().style.cursor='pointer');
+  mappa.on('mouseleave','celle', () => mappa.getCanvas().style.cursor='');
+
+  if (!localStorage.getItem('avviso-visto')) {
+    // Nota: su claude.ai localStorage e' bloccato; in produzione funziona.
+    try { $('velo').classList.add('aperto'); localStorage.setItem('avviso-visto','1'); }
+    catch(_) { $('velo').classList.add('aperto'); }
+  }
+});
+
+$('chiudi').onclick = chiudi;
+$('apri-info').onclick = () => $('velo').classList.add('aperto');
+$('chiudi-info').onclick = () => $('velo').classList.remove('aperto');
+$('velo').onclick = e => { if (e.target === $('velo')) $('velo').classList.remove('aperto'); };
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if ($('velo').classList.contains('aperto')) $('velo').classList.remove('aperto');
+  else chiudi();
+});
+</script>
+</body>
+</html>

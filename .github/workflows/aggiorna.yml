@@ -1,0 +1,109 @@
+name: Aggiorna indice
+
+# Ogni mattina alle 5:40 UTC, cioe' le 7:40 in Italia d'estate e le 6:40 d'inverno.
+# A quell'ora la corsa notturna del modello ICON e' pubblicata da un pezzo.
+# Il cron di GitHub e' sempre in UTC e puo' partire con qualche minuto di ritardo
+# quando i runner sono sotto carico: non e' un problema, non abbiamo scadenze.
+on:
+  schedule:
+    - cron: '40 5 * * *'
+  workflow_dispatch:        # permette di lanciarlo a mano dal sito di GitHub
+
+permissions:
+  contents: write           # per scrivere lo storico sulla Release
+  pages: write              # per pubblicare il sito
+  id-token: write           # richiesto da deploy-pages
+
+# Se un'esecuzione e' ancora in corso quando parte la successiva, la nuova
+# aspetta invece di sovrapporsi: due processi che scrivono lo stesso storico
+# lo corromperebbero.
+concurrency:
+  group: indice
+  cancel-in-progress: false
+
+jobs:
+  aggiorna:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.pubblica.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Installa le librerie
+        run: pip install -r requirements.txt
+
+      # Lo storico meteo NON sta in git: crescerebbe di qualche megabyte al
+      # giorno per sempre e la cronologia diventerebbe ingestibile. Sta come
+      # allegato di una Release, che si sovrascrive senza accumulare versioni.
+      - name: Recupera lo storico meteo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p data/meteo
+          if gh release download dati -p storico.csv.gz -D data/meteo --clobber; then
+            echo "storico recuperato: $(du -h data/meteo/storico.csv.gz | cut -f1)"
+          else
+            echo "::error::Storico assente. Crea la Release 'dati' e caricaci storico.csv.gz."
+            exit 1
+          fi
+
+      # I runner di GitHub hanno indirizzi IP condivisi con moltissimi altri
+      # utenti, e Open-Meteo limita per IP. Un rifiuto qui non deve buttare giu'
+      # la mappa: se lo scarico fallisce proseguiamo con lo storico di ieri e
+      # ripubblichiamo, segnalandolo nel riepilogo.
+      - name: Scarica il meteo del giorno
+        id: meteo
+        continue-on-error: true
+        run: python scripts/04_fetch_meteo.py
+
+      - name: Segnala se il meteo non e' arrivato
+        if: steps.meteo.outcome == 'failure'
+        run: |
+          echo "::warning::Scarico meteo fallito, pubblico con i dati di ieri."
+          echo "⚠️ Meteo non aggiornato oggi: mappa ricalcolata sullo storico precedente." \
+            >> $GITHUB_STEP_SUMMARY
+
+      - name: Salva lo storico aggiornato
+        if: steps.meteo.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload dati data/meteo/storico.csv.gz --clobber
+
+      - name: Calcola l'indice
+        run: python scripts/05_modello.py --specie config/porcino.yml
+
+      - name: Prepara il sito
+        run: python scripts/06_build_sito.py
+
+      - name: Riepilogo
+        run: |
+          {
+            echo "### Indice aggiornato"
+            echo '```'
+            python - <<'PY'
+          import json
+          g = json.load(open("data/output/indice_porcino.geojson"))
+          v = [f["properties"]["oggi"] for f in g["features"]]
+          m = g["metadata"]
+          print(f"celle          {m['n_celle']}")
+          print(f"giorni         {m['giorni'][0]} .. {m['giorni'][-1]}")
+          print(f"indice massimo {max(v)}")
+          print(f"celle sopra 25 {sum(1 for x in v if x >= 25)}")
+          print(f"celle a zero   {sum(1 for x in v if x == 0)}")
+          PY
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: sito
+      - id: pubblica
+        uses: actions/deploy-pages@v4

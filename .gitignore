@@ -1,0 +1,19 @@
+# Ambiente Python locale
+.venv/
+__pycache__/
+*.pyc
+
+# Dati grezzi scaricati: enormi e ricostruibili
+data/raw/
+*.tif
+*.zip
+
+# Storico meteo: vive come allegato della Release "dati", non in git
+data/meteo/
+
+# Output rigenerati a ogni esecuzione
+data/output/
+sito/
+
+# File di sistema del Finder
+.DS_Store
