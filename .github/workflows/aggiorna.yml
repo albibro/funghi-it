@@ -8,6 +8,11 @@ on:
   schedule:
     - cron: '40 5 * * *'
   workflow_dispatch:        # permette di lanciarlo a mano dal sito di GitHub
+    inputs:
+      salta_meteo:
+        description: "Salta lo scarico meteo e usa lo storico gia' salvato"
+        type: boolean
+        default: false
 
 permissions:
   contents: write           # per scrivere lo storico sulla Release
@@ -58,10 +63,21 @@ jobs:
       # utenti, e Open-Meteo limita per IP. Un rifiuto qui non deve buttare giu'
       # la mappa: se lo scarico fallisce proseguiamo con lo storico di ieri e
       # ripubblichiamo, segnalandolo nel riepilogo.
+      #
+      # Con l'interruttore salta_meteo il passo non parte affatto: serve quando
+      # si rilancia solo per ripubblicare dopo una correzione al codice, e
+      # risparmia 2065 chiamate della quota giornaliera.
       - name: Scarica il meteo del giorno
         id: meteo
+        if: github.event.inputs.salta_meteo != 'true'
         continue-on-error: true
         run: python scripts/04_fetch_meteo.py
+
+      - name: Nota se il meteo e' stato saltato
+        if: github.event.inputs.salta_meteo == 'true'
+        run: |
+          echo "⏭️ Scarico meteo saltato su richiesta: uso lo storico salvato." \
+            >> $GITHUB_STEP_SUMMARY
 
       - name: Segnala se il meteo non e' arrivato
         if: steps.meteo.outcome == 'failure'
