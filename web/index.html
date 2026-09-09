@@ -31,12 +31,23 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
   border-radius:var(--raggio);box-shadow:var(--ombra);padding:9px 13px;max-width:min(56vw,320px)}
 .marchio h1{margin:0;font-size:15px;font-weight:700;letter-spacing:-.015em;line-height:1.2}
 .marchio p{margin:3px 0 0;font-size:11.5px;color:var(--tenue);line-height:1.35}
-.comandi{display:flex;gap:8px;pointer-events:auto}
-.tondo{flex:none;width:38px;height:38px;border-radius:50%;background:var(--carta);
-  border:1px solid var(--bordo);box-shadow:var(--ombra);font-size:15px;font-weight:600;
-  color:var(--inchiostro);cursor:pointer;padding:0}
-.tondo:focus-visible{outline:2px solid var(--i4);outline-offset:2px}
-.tondo[aria-pressed="true"]{background:var(--inchiostro);color:var(--carta);border-color:var(--inchiostro)}
+.comandi{display:flex;gap:7px;pointer-events:auto;flex-wrap:wrap;justify-content:flex-end}
+.pillola{
+  flex:none;display:flex;align-items:center;gap:6px;height:38px;padding:0 13px 0 11px;
+  border-radius:999px;background:var(--carta);border:1px solid var(--bordo);
+  box-shadow:var(--ombra);font-family:inherit;font-size:12.5px;font-weight:600;
+  color:var(--inchiostro);cursor:pointer;white-space:nowrap}
+.pillola svg{flex:none;width:17px;height:17px;stroke:currentColor;fill:none;
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.pillola:focus-visible{outline:2px solid var(--i4);outline-offset:2px}
+.pillola[aria-pressed="true"]{background:var(--inchiostro);color:var(--carta);border-color:var(--inchiostro)}
+/* Sotto i 420px le etichette sparirebbero l'una sull'altra: si torna al
+   cerchio con la sola icona, ma l'icona resta un disegno leggibile, non piu'
+   un carattere Unicode che varia da telefono a telefono. */
+@media (max-width:420px){
+  .pillola{width:38px;padding:0;justify-content:center}
+  .pillola span{display:none}
+}
 
 .tempo{position:absolute;z-index:5;left:14px;right:14px;
   bottom:calc(14px + env(safe-area-inset-bottom));background:var(--carta);
@@ -177,10 +188,24 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
     <p id="sottotitolo">Indice ricalcolato ogni giorno</p>
   </div>
   <div class="comandi">
-    <button class="tondo" id="tog-sentieri" aria-label="Mostra o nascondi i sentieri" aria-pressed="false">🥾</button>
-    <button class="tondo" id="apri-cerca" aria-label="Cerca una localita o usa la tua posizione">⌕</button>
-    <button class="tondo" id="apri-classifica" aria-label="Le zone migliori di oggi">★</button>
-    <button class="tondo" id="apri-info" aria-label="Informazioni, metodo e avvertenze">i</button>
+    <button class="pillola" id="tog-sentieri" aria-pressed="false"
+            aria-label="Mostra o nascondi i sentieri">
+      <svg viewBox="0 0 24 24"><path d="M3 20c2-3 3-6 3-9s2-6 4-6 2 4 4 4 3-4 5-4c1.5 0 2 2 2 4"/>
+        <path d="M3 20c2 0 3-1 4-1s2 1 4 1 3-1 4-1 2 1 4 1 3-1 2-3"/></svg>
+      <span>Sentieri</span>
+    </button>
+    <button class="pillola" id="apri-cerca" aria-label="Cerca una localita o usa la tua posizione">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.3-4.3"/></svg>
+      <span>Cerca</span>
+    </button>
+    <button class="pillola" id="apri-classifica" aria-label="Le zone migliori di oggi">
+      <svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.6.7-5 4.7 1.4 6.6L12 17l-5.9 3.3L7.5 13.7l-5-4.7 6.6-.7z"/></svg>
+      <span>Classifica</span>
+    </button>
+    <button class="pillola" id="apri-info" aria-label="Informazioni, metodo e avvertenze">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v.01"/></svg>
+      <span>Guida</span>
+    </button>
   </div>
 </header>
 
@@ -249,8 +274,8 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
   <div class="foglio">
     <h2 id="titolo-info">Come si legge questa mappa</h2>
     <p>Ogni riquadro copre circa <strong>2,8 per 2 chilometri</strong>. Il numero
-       stima quanto le condizioni ambientali siano favorevoli alla fruttificazione
-       del porcino in quel riquadro, non se ci siano funghi.</p>
+       non dice "qui ci sono funghi": dice quanto quel pezzo di bosco, oggi,
+       ha tutte le carte in regola per farli spuntare.</p>
 
     <div class="avviso">
       <p><strong>La raccolta è regolata da leggi regionali.</strong> Permessi,
@@ -263,44 +288,30 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
     </div>
 
     <h3>Da cosa nasce il punteggio</h3>
-    <p>Da sei condizioni moltiplicate fra loro: una pioggia abbondante caduta al
-       momento giusto, la temperatura del suolo a sei e diciotto centimetri,
-       l'umidità presente ora, la presenza di bosco compatibile alla quota giusta,
-       l'esposizione del versante e l'eventuale gelata recente.</p>
-    <p>Si moltiplicano perché sono condizioni necessarie, non punti che si sommano:
-       un bosco perfetto rimasto senz'acqua per un mese non produce niente. Per
-       questo i valori alti sono rari, e l'indice va letto come confronto fra zone
-       nello stesso giorno, non come una probabilità.</p>
-
-    <h3 id="risoluzione">Attenzione: la pioggia non ha questa risoluzione</h3>
-    <p>Va detto con chiarezza, perché cambia come vanno letti i riquadri. I dati
-       meteo hanno una risoluzione nativa di circa <strong>nove chilometri</strong>.
-       Bosco e quota invece li conosciamo a un centinaio di metri.</p>
-    <p>Quindi ogni gruppo di sedici riquadri condivide la stessa pioggia e la stessa
-       umidità misurata, mentre temperatura del suolo, tipo di bosco ed esposizione
-       sono calcolati sul riquadro singolo. La temperatura viene corretta per la
-       quota reale del riquadro, circa mezzo grado ogni cento metri di dislivello:
-       è la ragione per cui un versante alto e il suo fondovalle ora hanno punteggi
-       diversi, come è giusto che sia.</p>
-    <p>Non abbiamo inventato una distribuzione fine della pioggia dentro i nove
-       chilometri: sarebbe stata precisione finta.</p>
+    <p>Sei condizioni, moltiplicate fra loro: una pioggia vera caduta al momento
+       giusto, la temperatura del suolo in profondità, l'umidità di oggi, il
+       bosco giusto alla quota giusta, l'esposizione del versante, nessuna
+       gelata recente.</p>
+    <p>Moltiplicate, non sommate: un bosco perfetto rimasto all'asciutto per un
+       mese vale zero, punto. Per questo i punteggi alti sono rari — e quando un
+       riquadro si accende, è perché sta succedendo tutto insieme, sul serio.</p>
 
     <h3>Da lontano macchie, da vicino riquadri</h3>
-    <p>A scala ampia la mappa mostra una superficie sfumata, perché quel che conta
-       è dove sta il segnale sul territorio. Zoomando compaiono i riquadri veri
-       del calcolo.</p>
+    <p>Zoom indietro e vedi dove si accende l'Italia. Zoom avanti e trovi il
+       riquadro esatto, con il suo conto aperto, fattore per fattore.</p>
 
-    <h3>I giorni futuri non sono una previsione meteo</h3>
-    <p>La pioggia che innesca una buttata cade fra otto e venticinque giorni prima:
-       per i giorni mostrati qui è già caduta ed è già stata misurata. Dalle
-       previsioni arrivano solo temperatura e umidità del suolo, che sono le
-       grandezze più stabili di un modello meteo.</p>
+    <h3>Il modello non indovina il futuro</h3>
+    <p>La pioggia che innesca una buttata è già caduta quando la vedi qui: la
+       finestra utile va da otto a venticinque giorni prima. Dalle previsioni
+       arriva solo la temperatura del suolo nei giorni finali — la parte più
+       affidabile di qualunque modello meteo.</p>
 
-    <h3>Quanto è affidabile</h3>
-    <p>È un modello deterministico, non una previsione verificata sul campo.
-       I parametri vengono dalla letteratura micologica e sono ancora da tarare
-       sulle osservazioni reali. Trattalo come un indizio su dove valga la pena
-       cercare, mai come una garanzia.</p>
+    <h3>Quanto fidarsene</h3>
+    <p>È un calcolo deterministico: stessi dati, stesso risultato, sempre —
+       niente scatole nere. I parametri vengono dalla letteratura micologica e
+       li stiamo tarando confrontandoli con migliaia di segnalazioni reali.
+       Prendilo per quello che è: un ottimo indizio su dove cercare, non una
+       garanzia di trovare.</p>
 
     <p class="attribuzioni">
       Meteo <a href="https://open-meteo.com">Open-Meteo</a> (CC BY 4.0) ·
