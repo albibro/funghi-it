@@ -36,6 +36,7 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
   border:1px solid var(--bordo);box-shadow:var(--ombra);font-size:15px;font-weight:600;
   color:var(--inchiostro);cursor:pointer;padding:0}
 .tondo:focus-visible{outline:2px solid var(--i4);outline-offset:2px}
+.tondo[aria-pressed="true"]{background:var(--inchiostro);color:var(--carta);border-color:var(--inchiostro)}
 
 .tempo{position:absolute;z-index:5;left:14px;right:14px;
   bottom:calc(14px + env(safe-area-inset-bottom));background:var(--carta);
@@ -176,6 +177,7 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
     <p id="sottotitolo">Indice ricalcolato ogni giorno</p>
   </div>
   <div class="comandi">
+    <button class="tondo" id="tog-sentieri" aria-label="Mostra o nascondi i sentieri" aria-pressed="false">🥾</button>
     <button class="tondo" id="apri-cerca" aria-label="Cerca una localita o usa la tua posizione">⌕</button>
     <button class="tondo" id="apri-classifica" aria-label="Le zone migliori di oggi">★</button>
     <button class="tondo" id="apri-info" aria-label="Informazioni, metodo e avvertenze">i</button>
@@ -306,7 +308,8 @@ body{font-family:Archivo,system-ui,sans-serif;color:var(--inchiostro);
       Quota Copernicus DEM GLO-90, © DLR e.V. 2010–2014 e Airbus DS 2014–2018,
       distribuito da ESA · Confini ISTAT via openpolis ·
       Cartografia <a href="https://openfreemap.org">OpenFreeMap</a> e
-      <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
+      <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> ·
+      Sentieri <a href="https://waymarkedtrails.org">Waymarked Trails</a> (CC-BY-SA)
     </p>
     <button class="bottone" id="chiudi-info">Ho capito</button>
   </div>
@@ -558,7 +561,7 @@ function alterna(){
 
 mappa = new maplibregl.Map({
   container:'mappa', style:'https://tiles.openfreemap.org/styles/positron',
-  center:[12.5,42.6], zoom:5.1, minZoom:4.4, maxZoom:12,
+  center:[12.5,42.6], zoom:5.1, minZoom:4.4, maxZoom:16,
   attributionControl:{compact:true}
 });
 mappa.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-left');
@@ -592,6 +595,18 @@ mappa.on('load', async () => {
     `${D.meta.n.toLocaleString('it-IT')} zone da 2,8 km · aggiornato il ` +
     agg.toLocaleDateString('it-IT',{day:'numeric',month:'long'});
 
+  // Sentieri escursionistici da Waymarked Trails: tile raster trasparenti
+  // costruiti sugli stessi dati OpenStreetMap, gratuiti e senza chiave. Sotto
+  // il layer dell'indice cosi' i riquadri colorati restano leggibili sopra.
+  mappa.addSource('sentieri', {
+    type:'raster',
+    tiles:['https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png'],
+    tileSize:256, maxzoom:18,
+    attribution:'Sentieri © <a href="https://waymarkedtrails.org">Waymarked Trails</a> (CC-BY-SA)'
+  });
+  mappa.addLayer({id:'sentieri', type:'raster', source:'sentieri',
+    layout:{visibility:'none'}, paint:{'raster-opacity':0.85}});
+
   mappa.addSource('punti',{type:'geojson',data:punti});
   mappa.addLayer({id:'macchie', type:'heatmap', source:'punti', maxzoom: ZOOM_SCAMBIO+1,
     paint:{
@@ -622,6 +637,13 @@ mappa.on('load', async () => {
     $('riproduci').onclick = alterna;
   }
   aggiornaTempo();
+
+  try {
+    if (localStorage.getItem('sentieri-attivi') === 'true') {
+      mappa.setLayoutProperty('sentieri', 'visibility', 'visible');
+      $('tog-sentieri').setAttribute('aria-pressed', 'true');
+    }
+  } catch(_){}
 
   mappa.on('click','celle', e => {
     const n = e.features[0].properties.n;
@@ -697,6 +719,14 @@ function miaPosizione(){
     {enableHighAccuracy:false, timeout:12000, maximumAge:120000}
   );
 }
+
+$('tog-sentieri').onclick = () => {
+  const b = $('tog-sentieri');
+  const attivo = b.getAttribute('aria-pressed') === 'true';
+  mappa.setLayoutProperty('sentieri', 'visibility', attivo ? 'none' : 'visible');
+  b.setAttribute('aria-pressed', String(!attivo));
+  try { localStorage.setItem('sentieri-attivi', String(!attivo)); } catch(_){}
+};
 
 $('apri-cerca').onclick = () => {
   $('velo-cerca').classList.add('aperto');
