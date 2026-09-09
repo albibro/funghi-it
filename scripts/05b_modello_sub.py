@@ -61,6 +61,15 @@ def campana(g, picco, sigma, gmin, gmax):
                     np.exp(-0.5 * ((g - picco) / sigma) ** 2), 0.0)
 
 
+def arretrato_minimo(p):
+    """Quanti giorni di storico servono PRIMA del giorno bersaglio perche' il
+    trigger e le medie termiche siano calcolabili senza finestre vuote."""
+    lat = p["latenza"]
+    ua = p["umidita_antecedente"]
+    te = p["termica"]
+    return lat["giorni_max"] + ua["giorni"] + max(te["giorni_finestra"], 1)
+
+
 def prepara_genitore(serie, p, indici_bersaglio):
     """Tutto cio' che dipende solo dal genitore: trigger, medie meteo, gelo.
 
@@ -72,6 +81,7 @@ def prepara_genitore(serie, p, indici_bersaglio):
     sm27 = serie["sm27_med"].values
     tmin = serie["t2m_min"].values
     idx = serie.index
+    minimo = arretrato_minimo(p)
 
     fin = p["trigger"]["finestra_ore"] // 24
     p72 = pd.Series(prec).rolling(fin, min_periods=fin).sum().values
@@ -83,6 +93,14 @@ def prepara_genitore(serie, p, indici_bersaglio):
 
     out = []
     for i in indici_bersaglio:
+        if i < minimo:
+            # Arretrato insufficiente: qualunque media qui sarebbe calcolata
+            # su una finestra parziale o vuota. Meglio un punteggio zero
+            # esplicito che un NaN silenzioso che si propaga nei confronti.
+            out.append({"trigger": 0.0, "info": None, "m6": np.nan, "m18": np.nan,
+                       "umid": 0.0, "sm9": np.nan, "gelo": 1.0, "gelato": False,
+                       "arretrato_insufficiente": True})
+            continue
         # --- trigger -----------------------------------------------------
         best, info = 0.0, None
         for L in range(lat["giorni_min"], lat["giorni_max"] + 1):
